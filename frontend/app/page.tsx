@@ -13,7 +13,7 @@ export default function Home() {
           Use the login or register page to continue.
         </p>
 
-        <div className="mt-8 grid gap-3 sm:grid-cols-2">
+        <div className="mt-8 grid gap-3 sm:grid-cols-3">
           <Link
             href="/login"
             className="inline-flex items-center justify-center rounded-lg border border-slate-200 px-4 py-3 text-sm font-medium text-slate-900 transition hover:border-slate-300 hover:bg-slate-50"
@@ -25,6 +25,12 @@ export default function Home() {
             className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800"
           >
             Register
+          </Link>
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center justify-center rounded-lg border border-slate-200 px-4 py-3 text-sm font-medium text-slate-900 transition hover:border-slate-300 hover:bg-slate-50"
+          >
+            Dashboard
           </Link>
         </div>
       </section>
