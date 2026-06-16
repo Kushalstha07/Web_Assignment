@@ -50,11 +50,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refreshUser]);
 
   const logout = useCallback(async () => {
-    try {
-      await fetch("/api/v1/auth/logout", { method: "POST" });
-    } catch {
-      // If no logout endpoint, just clear user
-    }
     // Clear the token cookie by setting it to expire immediately
     document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     setUser(null);

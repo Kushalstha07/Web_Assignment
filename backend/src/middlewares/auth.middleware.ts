@@ -23,17 +23,33 @@ export const authenticate = (
   next: NextFunction,
 ) => {
   try {
+    // Try Authorization header first, then fall back to cookie
+    let token: string | undefined;
+
     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
+    } else if (req.headers.cookie) {
+      // Parse cookie header to find the token
+      const cookies = req.headers.cookie.split(";").reduce(
+        (acc, cookie) => {
+          const [key, value] = cookie.trim().split("=");
+          acc[key] = value;
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
+      token = cookies["token"];
+    }
+
+    if (!token) {
       return ApiResponseHelper.error(
         res,
         "Authentication required. No token provided.",
         401,
       );
     }
-
-    const token = authHeader.split(" ")[1];
 
     const decoded = jwt.verify(token, SECRET_KEY) as JwtPayload;
 
