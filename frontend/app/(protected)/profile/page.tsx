@@ -104,7 +104,7 @@ export default function ProfilePage() {
                 />
               ) : user.profileImage ? (
                 <Image
-                  src={`http://localhost:4000${user.profileImage}`}
+                  src={user.profileImage}
                   alt={user.fullName}
                   fill
                   className="object-cover"

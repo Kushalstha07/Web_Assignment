@@ -2,9 +2,9 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { loginUser, registerUser, changePassword } from "@/lib/api/auth.api";
+import { loginUser, registerUser } from "@/lib/api/auth.api";
 import { loginSchema, registerSchema } from "@/lib/schemas/auth.schema";
-import type { AuthFormState, PasswordFormState } from "@/lib/types/auth-form.state";
+import type { AuthFormState } from "@/lib/types/auth-form.state";
 
 function formatZodErrors(
   issues: { path: PropertyKey[]; message: string }[],
@@ -84,6 +84,7 @@ export async function loginAction(
 
   const cookieStore = await cookies();
 
+  // httpOnly cookie for server-side page loads (SSR)
   cookieStore.set("token", response.data.token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -92,44 +93,15 @@ export async function loginAction(
     path: "/",
   });
 
-  redirect("/dashboard");
-}
-
-export async function changePasswordAction(
-  _prevState: PasswordFormState,
-  formData: FormData,
-): Promise<PasswordFormState> {
-  const currentPassword = formData.get("currentPassword") as string;
-  const newPassword = formData.get("newPassword") as string;
-  const confirmNewPassword = formData.get("confirmNewPassword") as string;
-
-  if (!currentPassword || currentPassword.length < 1) {
-    return { success: false, fieldErrors: { currentPassword: ["Current password is required"] } };
-  }
-
-  if (!newPassword || newPassword.length < 6) {
-    return { success: false, fieldErrors: { newPassword: ["New password must be at least 6 characters"] } };
-  }
-
-  if (newPassword !== confirmNewPassword) {
-    return { success: false, fieldErrors: { confirmNewPassword: ["Passwords do not match"] } };
-  }
-
-  const response = await changePassword({
-    currentPassword,
-    newPassword,
-    confirmNewPassword,
+  // Non-httpOnly companion cookie so client-side JS can read the token
+  // and pass it as Authorization header for proxy API calls
+  cookieStore.set("client-token", response.data.token, {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 30,
+    path: "/",
   });
 
-  if (!response.success) {
-    return {
-      success: false,
-      message: response.message || "Failed to change password",
-    };
-  }
-
-  return {
-    success: true,
-    message: "Password changed successfully",
-  };
+  redirect("/dashboard");
 }

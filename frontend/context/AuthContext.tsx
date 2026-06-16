@@ -8,7 +8,7 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import { whoami } from "@/lib/api/auth.api";
+import { API_URL } from "@/lib/config";
 import type { SafeUser } from "@/lib/api/types";
 
 interface AuthContextType {
@@ -22,6 +22,15 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * Read a cookie value by name from document.cookie
+ */
+function getCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(new RegExp(`(^| )${name}=([^;]+)`));
+  return match ? decodeURIComponent(match[2]) : null;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SafeUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -31,9 +40,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       setError(null);
-      const response = await whoami();
-      if (response.success && response.data) {
-        setUser(response.data);
+
+      // Read the client-token cookie and pass it as Authorization header
+      const token = getCookie("client-token");
+
+      if (!token) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/api/v1/auth/whoami`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        cache: "no-store",
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        setUser(data.data);
       } else {
         setUser(null);
       }
@@ -50,8 +78,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refreshUser]);
 
   const logout = useCallback(async () => {
-    // Clear the token cookie by setting it to expire immediately
+    // Clear both cookies
     document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    document.cookie = "client-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     setUser(null);
   }, []);
 
