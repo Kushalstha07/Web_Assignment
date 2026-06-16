@@ -17,6 +17,7 @@ export interface SafeUser {
   intake: string;
   budget: string;
   role: string;
+  profileImage: string | null;
 }
 
 export interface LoginResponse {
