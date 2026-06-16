@@ -60,6 +60,8 @@ export const UserSchema = z.object({
     .min(6, "Password must be at least 6 character long"),
 
   role: z.enum(["admin", "user"]).default("user"),
+
+  profileImage: z.string().optional(),
 });
 
 export type UserType = z.infer<typeof UserSchema>;
