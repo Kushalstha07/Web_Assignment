@@ -2,9 +2,9 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { loginUser, registerUser } from "@/lib/api/auth.api";
+import { loginUser, registerUser, changePassword } from "@/lib/api/auth.api";
 import { loginSchema, registerSchema } from "@/lib/schemas/auth.schema";
-import type { AuthFormState } from "@/lib/types/auth-form.state";
+import type { AuthFormState, PasswordFormState } from "@/lib/types/auth-form.state";
 
 function formatZodErrors(
   issues: { path: PropertyKey[]; message: string }[],
@@ -93,4 +93,43 @@ export async function loginAction(
   });
 
   redirect("/dashboard");
+}
+
+export async function changePasswordAction(
+  _prevState: PasswordFormState,
+  formData: FormData,
+): Promise<PasswordFormState> {
+  const currentPassword = formData.get("currentPassword") as string;
+  const newPassword = formData.get("newPassword") as string;
+  const confirmNewPassword = formData.get("confirmNewPassword") as string;
+
+  if (!currentPassword || currentPassword.length < 1) {
+    return { success: false, fieldErrors: { currentPassword: ["Current password is required"] } };
+  }
+
+  if (!newPassword || newPassword.length < 6) {
+    return { success: false, fieldErrors: { newPassword: ["New password must be at least 6 characters"] } };
+  }
+
+  if (newPassword !== confirmNewPassword) {
+    return { success: false, fieldErrors: { confirmNewPassword: ["Passwords do not match"] } };
+  }
+
+  const response = await changePassword({
+    currentPassword,
+    newPassword,
+    confirmNewPassword,
+  });
+
+  if (!response.success) {
+    return {
+      success: false,
+      message: response.message || "Failed to change password",
+    };
+  }
+
+  return {
+    success: true,
+    message: "Password changed successfully",
+  };
 }
