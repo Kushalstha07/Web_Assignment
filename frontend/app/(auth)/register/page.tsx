@@ -8,13 +8,12 @@ export const metadata: Metadata = {
 export default function RegisterPage() {
   return (
     <>
-      <div className="mb-8">
-        <p className="text-sm font-medium text-blue-600">Create your account</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">
-          Register
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold tracking-tight text-[#0F172A]">
+          Create your account
         </h1>
-        <p className="mt-2 text-sm leading-6 text-slate-500">
-          Fill in your details to make a new account.
+        <p className="mt-2 text-sm text-[#64748B]">
+          Join thousands of students who found their university match here.
         </p>
       </div>
 
