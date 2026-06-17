@@ -48,7 +48,7 @@ export function LoginForm({
             name="email"
             type="email"
             autoComplete="email"
-            className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+            className="w-full rounded-[14px] border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
             placeholder="you@example.com"
           />
           <FieldError errors={state.fieldErrors?.email} />
@@ -66,7 +66,7 @@ export function LoginForm({
             name="password"
             type="password"
             autoComplete="current-password"
-            className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+            className="w-full rounded-[14px] border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
             placeholder="Enter your password"
           />
           <FieldError errors={state.fieldErrors?.password} />
@@ -81,17 +81,17 @@ export function LoginForm({
         <button
           type="submit"
           disabled={isPending}
-          className="w-full rounded-lg bg-slate-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+          className="w-full rounded-[14px] bg-blue-600 px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isPending ? "Signing in..." : "Login"}
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-slate-600">
+      <p className="mt-6 text-center text-sm text-slate-500">
         No account?{" "}
         <Link
           href="/register"
-          className="font-medium text-slate-900 underline-offset-4 hover:underline"
+          className="font-medium text-blue-600 underline-offset-4 hover:underline"
         >
           Create one
         </Link>

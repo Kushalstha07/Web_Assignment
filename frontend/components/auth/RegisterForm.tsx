@@ -29,9 +29,9 @@ export function RegisterForm() {
   return (
     <>
       <form action={formAction} className="grid gap-4 md:grid-cols-2">
-        <div className="md:col-span-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+        <div className="md:col-span-2 rounded-[14px] border border-blue-100 bg-blue-50/50 px-4 py-3">
           <p className="text-sm font-medium text-slate-900">Education profile</p>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-slate-500">
             Share a few details so the consultancy system can suggest better
             guidance.
           </p>
@@ -49,7 +49,7 @@ export function RegisterForm() {
             name="fullName"
             type="text"
             autoComplete="name"
-            className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+            className="w-full rounded-[14px] border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
             placeholder="Your full name"
           />
           <FieldError errors={state.fieldErrors?.fullName} />
@@ -67,7 +67,7 @@ export function RegisterForm() {
             name="username"
             type="text"
             autoComplete="username"
-            className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+            className="w-full rounded-[14px] border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
             placeholder="Choose a username"
           />
           <FieldError errors={state.fieldErrors?.username} />
@@ -84,7 +84,7 @@ export function RegisterForm() {
             id="studyLevel"
             name="studyLevel"
             defaultValue=""
-            className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+            className="w-full rounded-[14px] border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
           >
             <option value="" disabled>
               Select level
@@ -108,7 +108,7 @@ export function RegisterForm() {
             id="destination"
             name="destination"
             defaultValue=""
-            className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+            className="w-full rounded-[14px] border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
           >
             <option value="" disabled>
               Select country
@@ -131,7 +131,7 @@ export function RegisterForm() {
             name="email"
             type="email"
             autoComplete="email"
-            className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+            className="w-full rounded-[14px] border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
             placeholder="you@example.com"
           />
           <FieldError errors={state.fieldErrors?.email} />
@@ -146,7 +146,7 @@ export function RegisterForm() {
             name="phoneNumber"
             type="tel"
             autoComplete="tel"
-            className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+            className="w-full rounded-[14px] border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
             placeholder="+977 9800000000"
           />
           <FieldError errors={state.fieldErrors?.phoneNumber} />
@@ -164,7 +164,7 @@ export function RegisterForm() {
             name="fieldOfStudy"
             type="text"
             autoComplete="off"
-            className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+            className="w-full rounded-[14px] border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
             placeholder="Computer Science, Business, Medicine, etc."
           />
           <FieldError errors={state.fieldErrors?.fieldOfStudy} />
@@ -178,7 +178,7 @@ export function RegisterForm() {
             id="intake"
             name="intake"
             defaultValue=""
-            className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+            className="w-full rounded-[14px] border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
           >
             <option value="" disabled>
               Select intake
@@ -199,7 +199,7 @@ export function RegisterForm() {
             id="budget"
             name="budget"
             defaultValue=""
-            className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+            className="w-full rounded-[14px] border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
           >
             <option value="" disabled>
               Select budget
@@ -224,7 +224,7 @@ export function RegisterForm() {
             name="password"
             type="password"
             autoComplete="new-password"
-            className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+            className="w-full rounded-[14px] border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
             placeholder="Create a password"
           />
           <FieldError errors={state.fieldErrors?.password} />
@@ -242,18 +242,18 @@ export function RegisterForm() {
             name="confirmPassword"
             type="password"
             autoComplete="new-password"
-            className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+            className="w-full rounded-[14px] border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
             placeholder="Re-enter your password"
           />
           <FieldError errors={state.fieldErrors?.confirmPassword} />
         </div>
 
-        <label className="md:col-span-2 flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        <label className="md:col-span-2 flex items-start gap-3 rounded-[14px] border border-blue-100 bg-blue-50/30 px-4 py-3 text-sm text-slate-600">
           <input
             id="terms"
             name="terms"
             type="checkbox"
-            className="mt-1 h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+            className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
           />
           <span>I agree to the terms and conditions.</span>
         </label>
@@ -268,17 +268,17 @@ export function RegisterForm() {
         <button
           type="submit"
           disabled={isPending}
-          className="md:col-span-2 w-full rounded-lg bg-slate-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+          className="md:col-span-2 w-full rounded-[14px] bg-blue-600 px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isPending ? "Creating account..." : "Register"}
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-slate-600">
+      <p className="mt-6 text-center text-sm text-slate-500">
         Already have an account?{" "}
         <Link
           href="/login"
-          className="font-medium text-slate-900 underline-offset-4 hover:underline"
+          className="font-medium text-blue-600 underline-offset-4 hover:underline"
         >
           Log in
         </Link>

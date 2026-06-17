@@ -3,6 +3,12 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --primary-blue: #2563EB;
+  --dark-navy: #0F172A;
+  --light-blue: #EFF6FF;
+  --text-dark: #1E293B;
+  --text-gray: #64748B;
+  --border-gray: #E2E8F0;
 }
 
 @theme inline {
@@ -19,6 +25,7 @@
 html {
   min-height: 100%;
   background: var(--background);
+  scroll-behavior: smooth;
 }
 
 body {
@@ -27,4 +34,10 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
 }

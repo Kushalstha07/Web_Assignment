@@ -17,11 +17,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <>
       <div className="mb-8">
-        <p className="text-sm font-medium text-slate-500">Welcome back</p>
+        <p className="text-sm font-medium text-blue-600">Welcome back</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">
           Login
         </h1>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
+        <p className="mt-2 text-sm leading-6 text-slate-500">
           Sign in with your email and password.
         </p>
       </div>
