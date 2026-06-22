@@ -1,12 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useEffect, useState } from "react";
+import { useActionState } from "react";
+import { useRouter } from "next/navigation";
 import { loginAction } from "@/actions/auth.action";
+import { useAuth } from "@/context/AuthContext";
 import {
   initialAuthFormState,
   type AuthFormState,
 } from "@/lib/types/auth-form.state";
+
+/**
+ * Set a cookie that expires 30 days from now
+ */
+function setClientCookie(name: string, value: string): void {
+  const maxAge = 60 * 60 * 24 * 30; // 30 days
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; sameSite=lax`;
+}
 
 function FieldError({
   errors,
@@ -31,17 +42,35 @@ export function LoginForm({
 }: {
   registered?: boolean;
 }) {
+  const router = useRouter();
+  const { refreshUser } = useAuth();
   const [state, formAction, isPending] = useActionState<AuthFormState, FormData>(
     loginAction,
     initialAuthFormState,
   );
   const [selectedRole, setSelectedRole] = useState<string>("Student");
 
+  // When login succeeds, set the cookie client-side, refresh auth context, then navigate
+  useEffect(() => {
+    if (state.success && state.token) {
+      setClientCookie("client-token", state.token);
+      refreshUser().then(() => {
+        router.push("/dashboard");
+      });
+    }
+  }, [state.success, state.token, router, refreshUser]);
+
   return (
     <>
       {registered ? (
         <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
           Account created successfully. Please log in.
+        </p>
+      ) : null}
+
+      {state.success && state.token ? (
+        <p className="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+          Login successful! Redirecting to dashboard...
         </p>
       ) : null}
 
@@ -111,7 +140,7 @@ export function LoginForm({
           <FieldError errors={state.fieldErrors?.password} />
         </div>
 
-        {state.message ? (
+        {state.message && !state.success ? (
           <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {state.message}
           </p>
@@ -120,7 +149,7 @@ export function LoginForm({
         {/* Sign In */}
         <button
           type="submit"
-          disabled={isPending}
+          disabled={isPending || (state.success && !!state.token)}
           className="relative h-12 w-full overflow-hidden rounded-xl bg-[#1D4ED8] text-sm font-bold text-white shadow-lg shadow-[#1D4ED8]/20 transition-all hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isPending ? "Signing in..." : "Sign In"}

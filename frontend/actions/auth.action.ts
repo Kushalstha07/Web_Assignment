@@ -45,12 +45,22 @@ export async function registerAction(
   const { confirmPassword: _confirmPassword, terms: _terms, ...payload } =
     parsed.data;
 
-  const response = await registerUser(payload);
+  let response;
+  try {
+    response = await registerUser(payload);
+  } catch (error) {
+    console.error("Registration error:", error);
+    return {
+      success: false,
+      message:
+        "Unable to connect to the server. Please make sure the backend is running on port 4000 and try again.",
+    };
+  }
 
   if (!response.success) {
     return {
       success: false,
-      message: response.message,
+      message: response.message || "Registration failed. Please try again.",
     };
   }
 
@@ -73,12 +83,22 @@ export async function loginAction(
     };
   }
 
-  const response = await loginUser(parsed.data);
+  let response;
+  try {
+    response = await loginUser(parsed.data);
+  } catch (error) {
+    console.error("Login error:", error);
+    return {
+      success: false,
+      message:
+        "Unable to connect to the server. Please make sure the backend is running on port 4000 and try again.",
+    };
+  }
 
   if (!response.success || !response.data?.token) {
     return {
       success: false,
-      message: response.message || "Login failed",
+      message: response.message || "Login failed. Please check your credentials.",
     };
   }
 
@@ -93,15 +113,9 @@ export async function loginAction(
     path: "/",
   });
 
-  // Non-httpOnly companion cookie so client-side JS can read the token
-  // and pass it as Authorization header for proxy API calls
-  cookieStore.set("client-token", response.data.token, {
-    httpOnly: false,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 30,
-    path: "/",
-  });
-
-  redirect("/dashboard");
+  // Return the token so the client can set the non-httpOnly cookie reliably
+  return {
+    success: true,
+    token: response.data.token,
+  };
 }

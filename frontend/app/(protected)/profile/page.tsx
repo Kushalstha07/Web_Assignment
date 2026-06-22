@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { updateProfile } from "@/lib/api/auth.api";
 import { useState, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   studyLevels,
   destinations,
@@ -271,6 +272,12 @@ export default function ProfilePage() {
           >
             Reset
           </button>
+          <Link
+            href="/change-password"
+            className="ml-auto rounded-lg border border-slate-200 px-6 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            Change Password
+          </Link>
         </div>
       </form>
     </div>

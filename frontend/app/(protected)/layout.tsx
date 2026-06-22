@@ -10,7 +10,7 @@ export default function ProtectedLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -91,7 +91,10 @@ export default function ProtectedLayout({
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" strokeWidth="1.5"/>
               </svg>
             </button>
-            <div className="ml-2 flex items-center gap-3 rounded-xl border border-[#E2E8F0] bg-white px-3 py-1.5">
+            <Link
+              href="/profile"
+              className="ml-2 flex items-center gap-3 rounded-xl border border-[#E2E8F0] bg-white px-3 py-1.5 transition-all hover:border-[#2563EB]/30 hover:shadow-sm"
+            >
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#2563EB] to-[#7C3AED] text-sm font-bold text-white">
                 {user.fullName
                   .split(" ")
@@ -106,7 +109,21 @@ export default function ProtectedLayout({
                 </p>
                 <p className="text-xs text-[#64748B]">Student</p>
               </div>
-            </div>
+            </Link>
+            <button
+              onClick={async () => {
+                await logout();
+                router.push("/login");
+              }}
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#E2E8F0] bg-white text-[#64748B] transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-500"
+              title="Logout"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M16 17L21 12L16 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M21 12H9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
           </div>
         </div>
       </header>

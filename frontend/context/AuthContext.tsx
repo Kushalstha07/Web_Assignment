@@ -8,7 +8,6 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import { API_URL } from "@/lib/config";
 import type { SafeUser } from "@/lib/api/types";
 
 interface AuthContextType {
@@ -50,7 +49,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const response = await fetch(`${API_URL}/api/v1/auth/whoami`, {
+      // Use the Next.js proxy path (rewritten to backend by next.config.ts)
+      const response = await fetch("/api/v1/auth/whoami", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
