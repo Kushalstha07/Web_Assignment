@@ -4,17 +4,39 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
+function EyeIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function EyeOffIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  );
+}
+
 export default function ChangePasswordPage() {
   const { logout } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
   } | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<
-    Record<string, string[]>
-  >({});
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -22,22 +44,14 @@ export default function ChangePasswordPage() {
     setMessage(null);
     setFieldErrors({});
 
-    const formData = new FormData(e.currentTarget);
-    const currentPassword = formData.get("currentPassword") as string;
-    const newPassword = formData.get("newPassword") as string;
-    const confirmNewPassword = formData.get("confirmNewPassword") as string;
-
-    // Client-side validation
     const errors: Record<string, string[]> = {};
-    if (!currentPassword || currentPassword.length < 1) {
+    if (!currentPassword) {
       errors.currentPassword = ["Current password is required"];
     }
     if (!newPassword || newPassword.length < 6) {
-      errors.newPassword = [
-        "New password must be at least 6 characters long",
-      ];
+      errors.newPassword = ["New password must be at least 6 characters long"];
     }
-    if (newPassword !== confirmNewPassword) {
+    if (newPassword !== confirmPassword) {
       errors.confirmNewPassword = ["Passwords do not match"];
     }
 
@@ -56,7 +70,7 @@ export default function ChangePasswordPage() {
         body: JSON.stringify({
           currentPassword,
           newPassword,
-          confirmNewPassword,
+          confirmNewPassword: confirmPassword,
         }),
       });
 
@@ -68,7 +82,6 @@ export default function ChangePasswordPage() {
           text: "Password changed successfully! You will be logged out.",
         });
 
-        // Logout after 2 seconds
         setTimeout(async () => {
           await logout();
           router.push("/login");
@@ -113,74 +126,88 @@ export default function ChangePasswordPage() {
       <form onSubmit={handleSubmit} className="mt-6 space-y-6">
         {/* Current Password */}
         <div>
-          <label
-            htmlFor="currentPassword"
-            className="block text-sm font-medium text-slate-700"
-          >
+          <label htmlFor="currentPassword" className="block text-sm font-medium text-slate-700">
             Current Password
           </label>
-          <input
-            type="password"
-            id="currentPassword"
-            name="currentPassword"
-            className={`mt-1 block w-full rounded-lg border px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-400 ${
-              fieldErrors.currentPassword
-                ? "border-red-300"
-                : "border-slate-200"
-            }`}
-          />
+          <div className="relative mt-1">
+            <input
+              type={showCurrentPassword ? "text" : "password"}
+              id="currentPassword"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className={`block w-full rounded-lg border px-4 py-2.5 pr-12 text-sm text-slate-900 outline-none transition focus:border-slate-400 ${
+                fieldErrors.currentPassword ? "border-red-300" : "border-slate-200"
+              }`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
+              tabIndex={-1}
+            >
+              {showCurrentPassword ? <EyeOffIcon /> : <EyeIcon />}
+            </button>
+          </div>
           {fieldErrors.currentPassword && (
-            <p className="mt-1 text-xs text-red-500">
-              {fieldErrors.currentPassword[0]}
-            </p>
+            <p className="mt-1 text-xs text-red-500">{fieldErrors.currentPassword[0]}</p>
           )}
         </div>
 
         {/* New Password */}
         <div>
-          <label
-            htmlFor="newPassword"
-            className="block text-sm font-medium text-slate-700"
-          >
+          <label htmlFor="newPassword" className="block text-sm font-medium text-slate-700">
             New Password
           </label>
-          <input
-            type="password"
-            id="newPassword"
-            name="newPassword"
-            className={`mt-1 block w-full rounded-lg border px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-400 ${
-              fieldErrors.newPassword ? "border-red-300" : "border-slate-200"
-            }`}
-          />
+          <div className="relative mt-1">
+            <input
+              type={showNewPassword ? "text" : "password"}
+              id="newPassword"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className={`block w-full rounded-lg border px-4 py-2.5 pr-12 text-sm text-slate-900 outline-none transition focus:border-slate-400 ${
+                fieldErrors.newPassword ? "border-red-300" : "border-slate-200"
+              }`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowNewPassword(!showNewPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
+              tabIndex={-1}
+            >
+              {showNewPassword ? <EyeOffIcon /> : <EyeIcon />}
+            </button>
+          </div>
           {fieldErrors.newPassword && (
-            <p className="mt-1 text-xs text-red-500">
-              {fieldErrors.newPassword[0]}
-            </p>
+            <p className="mt-1 text-xs text-red-500">{fieldErrors.newPassword[0]}</p>
           )}
         </div>
 
         {/* Confirm New Password */}
         <div>
-          <label
-            htmlFor="confirmNewPassword"
-            className="block text-sm font-medium text-slate-700"
-          >
+          <label htmlFor="confirmNewPassword" className="block text-sm font-medium text-slate-700">
             Confirm New Password
           </label>
-          <input
-            type="password"
-            id="confirmNewPassword"
-            name="confirmNewPassword"
-            className={`mt-1 block w-full rounded-lg border px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-400 ${
-              fieldErrors.confirmNewPassword
-                ? "border-red-300"
-                : "border-slate-200"
-            }`}
-          />
+          <div className="relative mt-1">
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              id="confirmNewPassword"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className={`block w-full rounded-lg border px-4 py-2.5 pr-12 text-sm text-slate-900 outline-none transition focus:border-slate-400 ${
+                fieldErrors.confirmNewPassword ? "border-red-300" : "border-slate-200"
+              }`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
+              tabIndex={-1}
+            >
+              {showConfirmPassword ? <EyeOffIcon /> : <EyeIcon />}
+            </button>
+          </div>
           {fieldErrors.confirmNewPassword && (
-            <p className="mt-1 text-xs text-red-500">
-              {fieldErrors.confirmNewPassword[0]}
-            </p>
+            <p className="mt-1 text-xs text-red-500">{fieldErrors.confirmNewPassword[0]}</p>
           )}
         </div>
 

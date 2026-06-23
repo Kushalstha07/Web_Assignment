@@ -31,97 +31,62 @@ export type ChangePasswordPayload = {
   confirmNewPassword: string;
 };
 
-/**
- * Returns the base URL for API calls.
- * - Server-side (server actions): use absolute URL (e.g. http://localhost:4000)
- * - Client-side (browser): use empty string so proxy rewrites handle it
- */
-function getBaseUrl(): string {
-  if (typeof window === "undefined") {
-    return API_URL;
-  }
+function getBaseUrl() {
+  if (typeof window === "undefined") return API_URL;
   return "";
 }
 
-/**
- * Read a cookie value by name from document.cookie (client-side only)
- */
-function getClientToken(): string | null {
+function getToken() {
   if (typeof document === "undefined") return null;
   const match = document.cookie.match(new RegExp("(^| )client-token=([^;]+)"));
   return match ? decodeURIComponent(match[2]) : null;
 }
 
-/**
- * Build headers with optional Authorization Bearer token for client-side calls
- */
-function buildHeaders(extra: Record<string, string> = {}): Record<string, string> {
-  const headers: Record<string, string> = { ...extra };
-  const token = getClientToken();
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-  return headers;
+async function parseResponse(response: Response) {
+  return response.json();
 }
 
-async function parseResponse<T>(response: Response): Promise<ApiResponse<T>> {
-  return response.json() as Promise<ApiResponse<T>>;
-}
-
-export async function registerUser(
-  payload: RegisterPayload,
-): Promise<ApiResponse<SafeUser>> {
+export async function registerUser(payload: RegisterPayload) {
   const baseUrl = getBaseUrl();
   const response = await fetch(`${baseUrl}/api/v1/auth/register`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
     cache: "no-store",
   });
-
-  return parseResponse<SafeUser>(response);
+  return parseResponse(response);
 }
 
-export async function loginUser(
-  payload: LoginInput,
-): Promise<ApiResponse<LoginResponse>> {
+export async function loginUser(payload: LoginInput) {
   const baseUrl = getBaseUrl();
   const response = await fetch(`${baseUrl}/api/v1/auth/login`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
     cache: "no-store",
   });
-
-  return parseResponse<LoginResponse>(response);
+  return parseResponse(response);
 }
 
-export async function whoami(): Promise<ApiResponse<SafeUser>> {
+export async function whoami() {
   const baseUrl = getBaseUrl();
+  const token = getToken();
+  const headers: Record<string, string> = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
   const response = await fetch(`${baseUrl}/api/v1/auth/whoami`, {
     method: "GET",
-    headers: buildHeaders(),
+    headers,
     cache: "no-store",
   });
-
-  return parseResponse<SafeUser>(response);
+  return parseResponse(response);
 }
 
-export async function updateProfile(
-  payload: FormData,
-): Promise<ApiResponse<SafeUser>> {
+export async function updateProfile(payload: FormData) {
   const baseUrl = getBaseUrl();
-  const token = getClientToken();
-
+  const token = getToken();
   const headers: Record<string, string> = {};
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-  // Do NOT set Content-Type for FormData — browser sets it with the boundary
+  if (token) headers["Authorization"] = `Bearer ${token}`;
 
   const response = await fetch(`${baseUrl}/api/v1/auth/update`, {
     method: "PUT",
@@ -129,20 +94,19 @@ export async function updateProfile(
     body: payload,
     cache: "no-store",
   });
-
-  return parseResponse<SafeUser>(response);
+  return parseResponse(response);
 }
 
-export async function changePassword(
-  payload: ChangePasswordPayload,
-): Promise<ApiResponse<null>> {
+export async function changePassword(payload: ChangePasswordPayload) {
   const baseUrl = getBaseUrl();
   const response = await fetch(`${baseUrl}/api/v1/auth/change-password`, {
     method: "PUT",
-    headers: buildHeaders({ "Content-Type": "application/json" }),
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${getToken()}`,
+    },
     body: JSON.stringify(payload),
     cache: "no-store",
   });
-
-  return parseResponse<null>(response);
+  return parseResponse(response);
 }
