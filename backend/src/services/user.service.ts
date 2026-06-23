@@ -1,5 +1,5 @@
 import { UserMongoRepository } from "../repositories/user.repository";
-import { CreateUserDTO, LoginUserDTO } from "../dtos/user.dto";
+import { CreateUserDTO, LoginUserDTO, UpdateUserDTO, ChangePasswordDTO } from "../dtos/user.dto";
 import { IUser } from "../models/user.model";
 import { HttpException } from "../exceptions/http-exception";
 import bcryptjs from "bcryptjs";
@@ -20,6 +20,7 @@ export type SafeUser = {
   intake: string;
   budget: string;
   role: string;
+  profileImage: string | null;
 };
 
 function toSafeUser(user: IUser): SafeUser {
@@ -35,6 +36,7 @@ function toSafeUser(user: IUser): SafeUser {
     intake: user.intake,
     budget: user.budget,
     role: user.role,
+    profileImage: user.profileImage || null,
   };
 }
 
@@ -96,5 +98,68 @@ export class UserService {
       user: toSafeUser(user),
       token,
     };
+  }
+
+  async getUserById(id: string): Promise<SafeUser> {
+    const user = await userRepository.getUserById(id);
+
+    if (!user) {
+      throw new HttpException(404, "User not found");
+    }
+
+    return toSafeUser(user);
+  }
+
+  async updateUser(
+    id: string,
+    updateData: UpdateUserDTO,
+    profileImage?: string,
+  ): Promise<SafeUser> {
+    const user = await userRepository.getUserById(id);
+
+    if (!user) {
+      throw new HttpException(404, "User not found");
+    }
+
+    const updateFields: Partial<IUser> = { ...updateData };
+
+    if (profileImage) {
+      updateFields.profileImage = profileImage;
+    }
+
+    const updatedUser = await userRepository.update(id, updateFields);
+
+    if (!updatedUser) {
+      throw new HttpException(500, "Failed to update user");
+    }
+
+    return toSafeUser(updatedUser);
+  }
+
+  async changePassword(
+    id: string,
+    changePasswordData: ChangePasswordDTO,
+  ): Promise<void> {
+    const user = await userRepository.getUserById(id);
+
+    if (!user) {
+      throw new HttpException(404, "User not found");
+    }
+
+    const isPasswordValid = await bcryptjs.compare(
+      changePasswordData.currentPassword,
+      user.password,
+    );
+
+    if (!isPasswordValid) {
+      throw new HttpException(400, "Current password is incorrect");
+    }
+
+    const hashedNewPassword = await bcryptjs.hash(
+      changePasswordData.newPassword,
+      10,
+    );
+
+    await userRepository.update(id, { password: hashedNewPassword });
   }
 }

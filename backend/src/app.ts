@@ -1,5 +1,6 @@
 import express, { Application, NextFunction, Request, Response } from "express";
 import cors from "cors";
+import path from "path";
 import userRoutes from "./routes/user.route";
 
 const app: Application = express();
@@ -14,6 +15,9 @@ app.use(
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve uploaded files statically
+app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")));
 
 app.get("/", (req: Request, res: Response) => {
   return res.status(200).json({
