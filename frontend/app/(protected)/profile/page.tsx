@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { updateProfile } from "@/lib/api/auth.api";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import PersonalInfoCard from "@/components/profile/PersonalInfoCard";
 import ReadinessCard from "@/components/profile/ReadinessCard";
@@ -10,8 +11,16 @@ import TestScoresCard from "@/components/profile/TestScoresCard";
 import DocumentVault from "@/components/profile/DocumentVault";
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [showEditForm, setShowEditForm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!user) return null;
 
@@ -52,6 +61,34 @@ export default function ProfilePage() {
 
   const missingDocuments = ["Financial Statement", "SOP"];
 
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    setMessage(null);
+
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    if (selectedFile) {
+      formData.set("profileImage", selectedFile);
+    }
+
+    const response = await updateProfile(formData);
+
+    if (response.success) {
+      setMessage({ type: "success", text: "Profile updated successfully!" });
+      await refreshUser();
+      setTimeout(() => setShowEditForm(false), 1500);
+    } else {
+      setMessage({
+        type: "error",
+        text: response.message || "Failed to update profile",
+      });
+    }
+
+    setLoading(false);
+  }
+
   if (showEditForm) {
     return (
       <div className="mx-auto max-w-4xl">
@@ -60,14 +97,28 @@ export default function ProfilePage() {
           <p className="mt-1 text-sm text-[#6B7280]">Update your personal information and profile picture.</p>
         </div>
 
+        {message && (
+          <div
+            className={`mb-4 rounded-lg p-3 text-sm ${
+              message.type === "success"
+                ? "bg-green-50 text-green-700"
+                : "bg-red-50 text-red-700"
+            }`}
+          >
+            {message.text}
+          </div>
+        )}
+
         <div className="rounded-2xl bg-white p-8 shadow-sm" style={{ boxShadow: "0px 8px 30px rgba(0,0,0,.05)" }}>
-          <form className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {/* Profile Image */}
             <div>
               <label className="block text-sm font-medium text-[#172B4D]">Profile Image</label>
               <div className="mt-2 flex items-center gap-4">
                 <div className="relative h-20 w-20 overflow-hidden rounded-full border-2 border-[#E8EEF7] bg-slate-100">
-                  {user.profileImage ? (
+                  {previewUrl ? (
+                    <img src={previewUrl} alt="Preview" className="h-full w-full object-cover" />
+                  ) : user.profileImage ? (
                     <img src={user.profileImage} alt={user.fullName} className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full items-center justify-center text-2xl font-semibold text-slate-400">
@@ -75,12 +126,36 @@ export default function ProfilePage() {
                     </div>
                   )}
                 </div>
-                <button
-                  type="button"
-                  className="rounded-lg border border-[#E8EEF7] px-4 py-2 text-sm font-medium text-[#172B4D] transition hover:border-[#1565D8] hover:text-[#1565D8]"
-                >
-                  Change Photo
-                </button>
+                <div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    name="profileImage"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setSelectedFile(file);
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setPreviewUrl(reader.result as string);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="rounded-lg border border-[#E8EEF7] px-4 py-2 text-sm font-medium text-[#172B4D] transition hover:border-[#1565D8] hover:text-[#1565D8]"
+                  >
+                    Change Photo
+                  </button>
+                  {selectedFile && (
+                    <p className="mt-1 text-xs text-[#6B7280]">{selectedFile.name}</p>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -189,13 +264,17 @@ export default function ProfilePage() {
             <div className="flex items-center gap-3 pt-4">
               <button
                 type="submit"
-                className="rounded-xl bg-[#1565D8] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0F4DB2]"
+                disabled={loading}
+                className="rounded-xl bg-[#1565D8] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0F4DB2] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Save Changes
+                {loading ? "Saving..." : "Save Changes"}
               </button>
               <button
                 type="button"
-                onClick={() => setShowEditForm(false)}
+                onClick={() => {
+                  setShowEditForm(false);
+                  setMessage(null);
+                }}
                 className="rounded-xl border border-[#E8EEF7] px-6 py-2.5 text-sm font-semibold text-[#172B4D] transition hover:border-[#1565D8] hover:text-[#1565D8]"
               >
                 Cancel
