@@ -12,6 +12,10 @@ const navItems = [
   { href: "/messages", label: "Messages", icon: "message" },
 ];
 
+const adminNavItems = [
+  { href: "/admin/users", label: "User Management", icon: "users" },
+];
+
 const bottomItems = [
   { href: "/profile", label: "Profile", icon: "user" },
   { href: "/change-password", label: "Change Password", icon: "lock" },
@@ -74,6 +78,14 @@ function Icon({ name, className }: { name: string; className?: string }) {
         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
       </svg>
     ),
+    users: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    ),
   };
 
   return icons[name] || null;
@@ -122,6 +134,32 @@ export default function Sidebar() {
 
       {/* Divider */}
       <div className="mx-6 my-4 border-t border-[#E8EEF7]" />
+
+      {/* Admin Navigation (only for admins) */}
+      {user?.role === "admin" && (
+        <>
+          <div className="px-3 mb-1">
+            <p className="px-3 text-xs font-semibold uppercase tracking-wider text-[#94A3B8]">Admin</p>
+          </div>
+          <nav className="px-3">
+            {adminNavItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                  isActive(item.href)
+                    ? "bg-[#EEF5FF] text-[#1565D8]"
+                    : "text-[#6B7280] hover:bg-[#F8FAFD] hover:text-[#172B4D]"
+                }`}
+              >
+                <Icon name={item.icon} className={isActive(item.href) ? "text-[#1565D8]" : ""} />
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+          <div className="mx-6 my-4 border-t border-[#E8EEF7]" />
+        </>
+      )}
 
       {/* Bottom Navigation */}
       <nav className="px-3">
