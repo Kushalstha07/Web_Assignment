@@ -42,3 +42,15 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
     return ApiResponseHelper.error(res, "Invalid or expired token.", 401);
   }
 };
+
+export const authorize = (...roles: string[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return ApiResponseHelper.error(res, "Authentication required.", 401);
+    }
+    if (!roles.includes(req.user.role)) {
+      return ApiResponseHelper.error(res, "Forbidden: insufficient permissions.", 403);
+    }
+    next();
+  };
+};
