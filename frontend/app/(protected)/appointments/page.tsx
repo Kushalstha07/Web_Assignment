@@ -58,6 +58,7 @@ export default function AppointmentsPage() {
   const [mounted, setMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
+  const [view, setView] = useState<"calendar" | "list">("calendar");
 
   useEffect(() => {
     if (!loading && !user) {
@@ -172,6 +173,17 @@ export default function AppointmentsPage() {
     },
   ];
 
+  const appointmentsList = [
+    { id: "1", student: "John Doe", email: "john@example.com", counsellor: "Sarah Williams", date: "2025-07-29", time: "10:00 AM - 11:00 AM", type: "Consultation", status: "confirmed" },
+    { id: "2", student: "Emily Davis", email: "emily@example.com", counsellor: "Michael Brown", date: "2025-07-29", time: "2:00 PM - 3:00 PM", type: "Interview", status: "confirmed" },
+    { id: "3", student: "Alex Johnson", email: "alex@example.com", counsellor: "Jennifer Taylor", date: "2025-07-30", time: "9:00 AM - 10:00 AM", type: "Document Review", status: "pending" },
+    { id: "4", student: "Sarah Lee", email: "sarah@example.com", counsellor: "Sarah Williams", date: "2025-07-30", time: "11:00 AM - 12:00 PM", type: "Consultation", status: "confirmed" },
+    { id: "5", student: "Michael Chen", email: "michael@example.com", counsellor: "Michael Brown", date: "2025-08-01", time: "3:00 PM - 4:00 PM", type: "Follow-up", status: "pending" },
+    { id: "6", student: "Lisa Wang", email: "lisa@example.com", counsellor: "Jennifer Taylor", date: "2025-08-02", time: "10:30 AM - 11:30 AM", type: "Interview", status: "confirmed" },
+    { id: "7", student: "David Park", email: "david@example.com", counsellor: "Sarah Williams", date: "2025-08-03", time: "2:00 PM - 3:00 PM", type: "Consultation", status: "pending" },
+    { id: "8", student: "Anna Smith", email: "anna@example.com", counsellor: "Michael Brown", date: "2025-08-04", time: "9:00 AM - 10:00 AM", type: "Review", status: "confirmed" },
+  ];
+
   const upcomingMeetings = [
     {
       id: "6",
@@ -261,9 +273,25 @@ export default function AppointmentsPage() {
             Schedule and manage student consultations
           </p>
         </div>
-        <Button variant="primary" size="md">
-          New Appointment
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant={view === "calendar" ? "primary" : "secondary"}
+            size="sm"
+            onClick={() => setView("calendar")}
+          >
+            Calendar
+          </Button>
+          <Button
+            variant={view === "list" ? "primary" : "secondary"}
+            size="sm"
+            onClick={() => setView("list")}
+          >
+            List View
+          </Button>
+          <Button variant="primary" size="md">
+            New Appointment
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -456,6 +484,62 @@ export default function AppointmentsPage() {
           </Card>
         </div>
       </div>
+      {view === "list" && (
+        <Card padding="md">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+            <h3 className="text-lg font-bold text-[#0F172A]">All Appointments</h3>
+            <div className="flex gap-2">
+              <Button variant="secondary" size="sm">Export CSV</Button>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[#E5E7EB]">
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-[#64748B]">Student</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-[#64748B]">Counsellor</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-[#64748B]">Date & Time</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-[#64748B]">Type</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-[#64748B]">Status</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-[#64748B]">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {appointmentsList.map((apt) => (
+                  <tr key={apt.id} className="border-b border-[#E5E7EB] hover:bg-[#F8FAFC] transition-colors">
+                    <td className="py-4 px-4">
+                      <div>
+                        <p className="text-sm font-semibold text-[#0F172A]">{apt.student}</p>
+                        <p className="text-xs text-[#64748B]">{apt.email}</p>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4 text-sm text-[#64748B]">{apt.counsellor}</td>
+                    <td className="py-4 px-4">
+                      <div>
+                        <p className="text-sm text-[#0F172A]">{apt.date}</p>
+                        <p className="text-xs text-[#64748B]">{apt.time}</p>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className="text-sm text-[#64748B]">{apt.type}</span>
+                    </td>
+                    <td className="py-4 px-4">
+                      <Badge variant={apt.status === "confirmed" ? "success" : "warning"} size="sm">{apt.status}</Badge>
+                    </td>
+                    <td className="py-4 px-4 text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="sm">View</Button>
+                        <Button variant="ghost" size="sm">Edit</Button>
+                        <Button variant="ghost" size="sm" className="text-[#EF4444]">Delete</Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
