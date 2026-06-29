@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Sidebar from "@/components/dashboard/Sidebar";
+import TopNav from "@/components/dashboard/TopNav";
 
 export default function ProtectedLayout({
   children,
@@ -40,7 +41,13 @@ export default function ProtectedLayout({
       <Sidebar />
 
       {/* Main Content Area */}
-      <main className="ml-[280px] flex-1 p-8">{children}</main>
+      <div className="flex-1 ml-[280px]">
+        {/* Top Navigation */}
+        <TopNav />
+
+        {/* Page Content */}
+        <main className="p-8">{children}</main>
+      </div>
     </div>
   );
 }
