@@ -38,11 +38,11 @@ app.use((req: Request, res: Response) => {
 });
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error("Error:", err);
+  console.error("Unhandled error:", err.message);
 
   return res.status(500).json({
     success: false,
-    message: "Internal server error",
+    message: process.env.NODE_ENV === "production" ? "Internal server error" : err.message,
   });
 });
 

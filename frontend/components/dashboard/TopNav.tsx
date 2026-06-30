@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { usePathname } from "next/navigation";
-import { Search, Sparkles, Bell, Plus, ChevronDown, User } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Search, Sparkles, Bell, Plus, ChevronDown, User, Settings, HelpCircle, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
 
 const breadcrumbMap: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -11,21 +12,39 @@ const breadcrumbMap: Record<string, string> = {
   "/applications": "Applications",
   "/universities": "Universities",
   "/scholarships": "Scholarships",
+  "/recommendations": "AI Recommendations",
   "/verification": "Document Verification",
   "/pipeline": "Student Pipeline",
   "/analytics": "Analytics",
   "/appointments": "Appointments",
   "/messages": "Messages",
   "/settings": "Settings",
+  "/profile": "Profile",
+  "/change-password": "Change Password",
+  "/reports": "Reports",
+  "/counsellors": "Counsellors",
+  "/visa": "Visa Processing",
+  "/admin/users": "User Management",
 };
 
 export default function TopNav() {
   const pathname = usePathname();
-  const [showSearch, setShowSearch] = useState(false);
+  const router = useRouter();
+  const { user, logout } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
 
   const currentPage = breadcrumbMap[pathname] || "Dashboard";
+  const initials = user?.fullName
+    ? user.fullName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+    : "U";
+  const displayName = user?.fullName || "User";
+  const role = user?.role === "admin" ? "Admin" : user?.role === "user" ? "Student" : "User";
+
+  const handleLogout = async () => {
+    await logout();
+    router.push("/login");
+  };
 
   return (
     <header className="sticky top-0 z-40 h-16 border-b border-[#E5E7EB] bg-white/80 backdrop-blur-md">
@@ -104,7 +123,7 @@ export default function TopNav() {
               className="flex items-center gap-2 rounded-[12px] p-1.5 pr-3 transition-all hover:bg-[#F8FAFC]"
             >
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#2563EB] to-[#7C3AED] text-sm font-bold text-white">
-                JD
+                {initials}
               </div>
               <ChevronDown className="h-4 w-4 text-[#64748B]" />
             </button>
@@ -112,19 +131,39 @@ export default function TopNav() {
             {showProfile && (
               <div className="absolute right-0 mt-2 w-56 rounded-[20px] border border-[#E5E7EB] bg-white p-2 shadow-lg">
                 <div className="mb-2 border-b border-[#E5E7EB] pb-2">
-                  <p className="text-sm font-semibold text-[#0F172A]">John Doe</p>
-                  <p className="text-xs text-[#64748B]">Admin</p>
+                  <p className="text-sm font-semibold text-[#0F172A]">{displayName}</p>
+                  <p className="text-xs text-[#64748B]">{role}</p>
                 </div>
                 <div className="space-y-1">
-                  {["Profile", "Settings", "Help", "Sign out"].map((item) => (
-                    <button
-                      key={item}
-                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-[#64748B] transition-all hover:bg-[#F8FAFC] hover:text-[#0F172A]"
-                    >
-                      {item === "Profile" && <User className="h-4 w-4" />}
-                      {item}
-                    </button>
-                  ))}
+                  <button
+                    onClick={() => { setShowProfile(false); router.push("/profile"); }}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-[#64748B] transition-all hover:bg-[#F8FAFC] hover:text-[#0F172A]"
+                  >
+                    <User className="h-4 w-4" />
+                    Profile
+                  </button>
+                  <button
+                    onClick={() => { setShowProfile(false); router.push("/settings"); }}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-[#64748B] transition-all hover:bg-[#F8FAFC] hover:text-[#0F172A]"
+                  >
+                    <Settings className="h-4 w-4" />
+                    Settings
+                  </button>
+                  <button
+                    onClick={() => { setShowProfile(false); router.push("/change-password"); }}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-[#64748B] transition-all hover:bg-[#F8FAFC] hover:text-[#0F172A]"
+                  >
+                    <HelpCircle className="h-4 w-4" />
+                    Change Password
+                  </button>
+                  <div className="border-t border-[#E5E7EB] my-1" />
+                  <button
+                    onClick={handleLogout}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-red-600 transition-all hover:bg-red-50"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Sign out
+                  </button>
                 </div>
               </div>
             )}

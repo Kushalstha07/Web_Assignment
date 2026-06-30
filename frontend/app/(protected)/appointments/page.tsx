@@ -3,7 +3,8 @@
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Calendar, momentNgLocalizer } from "react-big-calendar";
+// @ts-ignore
+import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Card } from "@/components/ui/Card";
@@ -30,7 +31,7 @@ import { cn } from "@/lib/utils";
 import { KPICard } from "@/components/admin/KPICard";
 import { SparklineData } from "@/components/charts";
 
-const localizer = momentNgLocalizer(moment);
+const localizer = momentLocalizer(moment);
 
 interface AppointmentEvent {
   id: string;

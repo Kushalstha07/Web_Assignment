@@ -22,10 +22,15 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
+  Shield,
+  GraduationCap,
+  BookOpen,
+  User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const mainNavItems = [
+// ─── Admin Navigation ───
+const adminMainNav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/students", label: "Students", icon: Users },
   { href: "/applications", label: "Applications", icon: FileText },
@@ -34,17 +39,36 @@ const mainNavItems = [
   { href: "/recommendations", label: "AI Recommendations", icon: Sparkles },
 ];
 
-const workflowNavItems = [
+const adminWorkflowNav = [
   { href: "/verification", label: "Document Verification", icon: FileCheck },
   { href: "/visa", label: "Visa Processing", icon: Plane },
   { href: "/counsellors", label: "Counsellors", icon: UserCheck },
   { href: "/appointments", label: "Appointments", icon: Calendar },
 ];
 
-const bottomNavItems = [
+const adminBottomNav = [
   { href: "/messages", label: "Messages", icon: MessageSquare },
   { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/analytics", label: "Analytics", icon: LineChart },
+  { href: "/admin/users", label: "User Management", icon: Shield },
+  { href: "/settings", label: "Settings", icon: Settings },
+];
+
+// ─── Student Navigation ───
+const studentMainNav = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/applications", label: "My Applications", icon: FileText },
+  { href: "/universities", label: "Universities", icon: Building2 },
+  { href: "/scholarships", label: "Scholarships", icon: Award },
+];
+
+const studentServiceNav = [
+  { href: "/appointments", label: "Book Appointment", icon: Calendar },
+  { href: "/messages", label: "Messages", icon: MessageSquare },
+  { href: "/profile", label: "My Profile", icon: User },
+];
+
+const studentBottomNav = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -76,20 +100,55 @@ function NavItem({
   );
 }
 
-export default function Sidebar() {
-  const pathname = usePathname();
-  const { user, logout } = useAuth();
-  const [collapsed, setCollapsed] = useState(false);
-
+function NavSection({
+  title,
+  items,
+  collapsed,
+  pathname,
+}: {
+  title?: string;
+  items: { href: string; label: string; icon: React.ElementType }[];
+  collapsed: boolean;
+  pathname: string;
+}) {
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";
     return pathname.startsWith(href);
   };
 
   return (
+    <>
+      {title && !collapsed && (
+        <div className="px-3 mb-1">
+          <p className="px-3 text-xs font-semibold uppercase tracking-wider text-[#94A3B8]">
+            {title}
+          </p>
+        </div>
+      )}
+      <nav className="px-3 space-y-1">
+        {items.map((item) => (
+          <NavItem
+            key={item.href}
+            item={item}
+            isActive={isActive(item.href)}
+            collapsed={collapsed}
+          />
+        ))}
+      </nav>
+    </>
+  );
+}
+
+export default function Sidebar() {
+  const pathname = usePathname();
+  const { user, logout } = useAuth();
+  const [collapsed, setCollapsed] = useState(false);
+  const isAdmin = user?.role === "admin";
+
+  return (
     <aside
       className={cn(
-        "fixed left-0 top-0 h-screen border-r border-[#E8EEF7] bg-white transition-all duration-300",
+        "fixed left-0 top-0 h-screen border-r border-[#E8EEF7] bg-white transition-all duration-300 z-50",
         collapsed ? "w-[80px]" : "w-[280px]"
       )}
     >
@@ -102,48 +161,67 @@ export default function Sidebar() {
           <path d="M12 2C15 5 16.5 8.5 16.5 12C16.5 15.5 15 19 12 22" stroke="#1565D8" strokeWidth="1.5" strokeLinecap="round" />
           <path d="M12 2C9 5 7.5 8.5 7.5 12C7.5 15.5 9 19 12 22" stroke="#1565D8" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
-        {!collapsed && <span className="text-xl font-bold text-[#172B4D]">EduGlobal</span>}
+        {!collapsed && (
+          <div>
+            <span className="text-xl font-bold text-[#172B4D]">EduGlobal</span>
+            <p className="text-[10px] font-medium text-[#94A3B8] tracking-wide uppercase">
+              {isAdmin ? "Admin Panel" : "Student Portal"}
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* Main Navigation */}
-      <nav className="mt-4 px-3 space-y-1">
-        {mainNavItems.map((item) => (
-          <NavItem key={item.href} item={item} isActive={isActive(item.href)} collapsed={collapsed} />
-        ))}
-      </nav>
-
-      {/* Divider */}
-      {!collapsed && <div className="mx-6 my-4 border-t border-[#E8EEF7]" />}
-
-      {/* Workflow Navigation */}
-      {!collapsed && (
+      {/* ─── ADMIN SIDEBAR ─── */}
+      {isAdmin ? (
         <>
-          <div className="px-3 mb-1">
-            <p className="px-3 text-xs font-semibold uppercase tracking-wider text-[#94A3B8]">Workflow</p>
+          <div className="mt-2 px-3 space-y-1">
+            <NavSection items={adminMainNav} collapsed={collapsed} pathname={pathname} />
           </div>
-          <nav className="px-3 space-y-1">
-            {workflowNavItems.map((item) => (
-              <NavItem key={item.href} item={item} isActive={isActive(item.href)} collapsed={collapsed} />
-            ))}
-          </nav>
-          <div className="mx-6 my-4 border-t border-[#E8EEF7]" />
+
+          {!collapsed && <div className="mx-6 my-4 border-t border-[#E8EEF7]" />}
+
+          {!collapsed && (
+            <NavSection
+              title="Workflow"
+              items={adminWorkflowNav}
+              collapsed={collapsed}
+              pathname={pathname}
+            />
+          )}
+          {collapsed && (
+            <NavSection items={adminWorkflowNav} collapsed={collapsed} pathname={pathname} />
+          )}
+
+          {!collapsed && <div className="mx-6 my-4 border-t border-[#E8EEF7]" />}
+
+          <NavSection items={adminBottomNav} collapsed={collapsed} pathname={pathname} />
+        </>
+      ) : (
+        /* ─── STUDENT SIDEBAR ─── */
+        <>
+          <div className="mt-2 px-3 space-y-1">
+            <NavSection items={studentMainNav} collapsed={collapsed} pathname={pathname} />
+          </div>
+
+          {!collapsed && <div className="mx-6 my-4 border-t border-[#E8EEF7]" />}
+
+          {!collapsed && (
+            <NavSection
+              title="Services"
+              items={studentServiceNav}
+              collapsed={collapsed}
+              pathname={pathname}
+            />
+          )}
+          {collapsed && (
+            <NavSection items={studentServiceNav} collapsed={collapsed} pathname={pathname} />
+          )}
+
+          {!collapsed && <div className="mx-6 my-4 border-t border-[#E8EEF7]" />}
+
+          <NavSection items={studentBottomNav} collapsed={collapsed} pathname={pathname} />
         </>
       )}
-
-      {collapsed && (
-        <nav className="px-3 space-y-1">
-          {workflowNavItems.map((item) => (
-            <NavItem key={item.href} item={item} isActive={isActive(item.href)} collapsed={collapsed} />
-          ))}
-        </nav>
-      )}
-
-      {/* Bottom Navigation */}
-      <nav className="px-3 space-y-1">
-        {bottomNavItems.map((item) => (
-          <NavItem key={item.href} item={item} isActive={isActive(item.href)} collapsed={collapsed} />
-        ))}
-      </nav>
 
       {/* Collapse Toggle */}
       <button
