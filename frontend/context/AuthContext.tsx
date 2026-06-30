@@ -63,6 +63,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data.success && data.data) {
         setUser(data.data);
       } else {
+        // Invalid session - clear httpOnly cookie and redirect to login
+        await fetch("/api/v1/auth/logout", { method: "POST" }).catch(() => {});
+        document.cookie = "client-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
         setUser(null);
       }
     } catch {
@@ -78,7 +81,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refreshUser]);
 
   const logout = useCallback(async () => {
-    // Clear both cookies
+    try {
+      // Attempt to call backend logout endpoint
+      const token = getCookie("client-token");
+      if (token) {
+        await fetch("/api/v1/auth/logout", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        }).catch(() => {});
+      }
+    } catch {
+      // Ignore backend errors during logout
+    }
+    // Clear both cookies regardless of backend response
     document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     document.cookie = "client-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     setUser(null);

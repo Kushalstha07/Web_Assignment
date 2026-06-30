@@ -10,6 +10,9 @@ export interface IUserRepository {
   getAll(): Promise<IUser[]>;
   update(id: string, user: Partial<IUser>): Promise<IUser | null>;
   delete(id: string): Promise<boolean>;
+
+  // Admin paginated search
+  getAllPaginated(page: number, limit: number, searchTerm?: string): Promise<{ users: IUser[]; total: number }>;
 }
 
 export class UserMongoRepository implements IUserRepository {
@@ -48,5 +51,26 @@ export class UserMongoRepository implements IUserRepository {
   async delete(id: string): Promise<boolean> {
     const deleted = await UserModel.findByIdAndDelete(id);
     return !!deleted;
+  }
+
+  async getAllPaginated(
+    page: number,
+    limit: number,
+    searchTerm?: string,
+  ): Promise<{ users: IUser[]; total: number }> {
+    const skip = (page - 1) * limit;
+
+    const filter: Record<string, any> = {};
+    if (searchTerm) {
+      const regex = new RegExp(searchTerm, "i");
+      filter.$or = [{ fullName: regex }, { email: regex }];
+    }
+
+    const [users, total] = await Promise.all([
+      UserModel.find(filter).skip(skip).limit(limit).sort({ createdAt: -1 }),
+      UserModel.countDocuments(filter),
+    ]);
+
+    return { users, total };
   }
 }

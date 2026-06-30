@@ -9,6 +9,17 @@ const userController = new UserController();
 userRouter.post("/register", userController.createUser);
 userRouter.post("/login", userController.loginUser);
 
+// Logout endpoint - clears the httpOnly token cookie
+userRouter.post("/logout", (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+  });
+  return res.json({ success: true, message: "Logged out successfully" });
+});
+
 // Protected routes
 userRouter.get("/whoami", authenticate, userController.whoami);
 userRouter.put(

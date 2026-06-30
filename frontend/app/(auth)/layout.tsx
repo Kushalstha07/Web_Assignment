@@ -142,7 +142,7 @@ export default function AuthLayout({
         </div>
         <div className="hidden h-4 w-px bg-white/20 sm:block" />
         <Link
-          href="/help"
+          href="/contact"
           className="flex items-center gap-1.5 text-sm text-white/50 transition-colors hover:text-white/80"
         >
           <svg
