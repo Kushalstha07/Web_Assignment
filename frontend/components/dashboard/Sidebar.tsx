@@ -144,6 +144,7 @@ export default function Sidebar() {
   const { user, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const isAdmin = user?.role === "admin";
+  const isCounsellor = user?.role === "counsellor";
 
   return (
     <aside
@@ -195,6 +196,26 @@ export default function Sidebar() {
           {!collapsed && <div className="mx-6 my-4 border-t border-[#E8EEF7]" />}
 
           <NavSection items={adminBottomNav} collapsed={collapsed} pathname={pathname} />
+        </>
+      ) : isCounsellor ? (
+        /* ─── COUNSELLOR SIDEBAR ─── */
+        <>
+          <div className="mt-2 px-3 space-y-1">
+            <NavSection items={[
+              { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+              { href: "/students", label: "Students", icon: Users },
+              { href: "/applications", label: "Applications", icon: FileText },
+              { href: "/appointments", label: "Appointments", icon: Calendar },
+              { href: "/messages", label: "Messages", icon: MessageSquare },
+            ]} collapsed={collapsed} pathname={pathname} />
+          </div>
+
+          {!collapsed && <div className="mx-6 my-4 border-t border-[#E8EEF7]" />}
+
+          <NavSection items={[
+            { href: "/profile", label: "My Profile", icon: User },
+            { href: "/settings", label: "Settings", icon: Settings },
+          ]} collapsed={collapsed} pathname={pathname} />
         </>
       ) : (
         /* ─── STUDENT SIDEBAR ─── */

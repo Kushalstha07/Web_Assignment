@@ -66,7 +66,7 @@ export default function StudentsPage() {
     return null;
   }
 
-  const students = users.filter(u => u.role === "user");
+  const students = users.filter(u => u.role === "student");
 
   return (
     <AdminGuard>
@@ -180,9 +180,11 @@ export default function StudentsPage() {
                         <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                           u.role === "admin"
                             ? "bg-purple-100 text-purple-700"
+                            : u.role === "counsellor"
+                            ? "bg-green-100 text-green-700"
                             : "bg-blue-100 text-blue-700"
                         }`}>
-                          {u.role}
+                          {u.role.charAt(0).toUpperCase() + u.role.slice(1)}
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-[#64748B]">{u.destination.charAt(0).toUpperCase() + u.destination.slice(1)}</td>
