@@ -39,7 +39,7 @@ export default function TopNav() {
     ? user.fullName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
   const displayName = user?.fullName || "User";
-  const role = user?.role === "admin" ? "Admin" : user?.role === "user" ? "Student" : "User";
+  const role = user?.role === "admin" ? "Admin" : user?.role === "student" ? "Student" : user?.role === "counsellor" ? "Counsellor" : "User";
 
   const handleLogout = async () => {
     await logout();

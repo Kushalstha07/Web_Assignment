@@ -19,13 +19,13 @@ async function seed() {
       username: "admin",
       email: "admin@eduglobal.com",
       phoneNumber: "9800000000",
-      studyLevel: "postgraduate",
-      destination: "usa",
+      studyLevel: "postgraduate" as const,
+      destination: "usa" as const,
       fieldOfStudy: "Administration",
-      intake: "fall",
-      budget: "35k-plus",
+      intake: "fall" as const,
+      budget: "35k-plus" as const,
       password: adminPassword,
-      role: "admin",
+      role: "admin" as const,
     });
     console.log(`Created admin: ${admin.email} (password: admin123)`);
 
@@ -40,13 +40,13 @@ async function seed() {
     for (const c of counsellors) {
       await UserModel.create({
         ...c,
-        studyLevel: "postgraduate",
-        destination: "usa",
+        studyLevel: "postgraduate" as const,
+        destination: "usa" as const,
         fieldOfStudy: "Counselling",
-        intake: "fall",
-        budget: "35k-plus",
+        intake: "fall" as const,
+        budget: "35k-plus" as const,
         password: counsellorPassword,
-        role: "counsellor",
+        role: "counsellor" as const,
       });
       console.log(`Created counsellor: ${c.email} (password: counsellor123)`);
     }
@@ -54,21 +54,21 @@ async function seed() {
     // ── Seed Student Users ──
     const studentPassword = await bcryptjs.hash("student123", 10);
     const students = [
-      { fullName: "Alex Mercer", username: "alex.mercer", email: "alex.mercer@example.com", phoneNumber: "9800000010", studyLevel: "undergraduate", destination: "usa", fieldOfStudy: "Computer Science", intake: "fall", budget: "20k-35k" },
-      { fullName: "Priya Sharma", username: "priya.sharma", email: "priya.sharma@example.com", phoneNumber: "9800000011", studyLevel: "postgraduate", destination: "uk", fieldOfStudy: "Business Administration", intake: "spring", budget: "20k-35k" },
-      { fullName: "James Wilson", username: "james.wilson", email: "james.wilson@example.com", phoneNumber: "9800000012", studyLevel: "undergraduate", destination: "canada", fieldOfStudy: "Engineering", intake: "fall", budget: "10k-20k" },
-      { fullName: "Aisha Patel", username: "aisha.patel", email: "aisha.patel@example.com", phoneNumber: "9800000013", studyLevel: "postgraduate", destination: "australia", fieldOfStudy: "Data Science", intake: "summer", budget: "20k-35k" },
-      { fullName: "Daniel Kim", username: "daniel.kim", email: "daniel.kim@example.com", phoneNumber: "9800000014", studyLevel: "high-school", destination: "usa", fieldOfStudy: "General Studies", intake: "fall", budget: "under-10k" },
-      { fullName: "Emma Thompson", username: "emma.thompson", email: "emma.thompson@example.com", phoneNumber: "9800000015", studyLevel: "undergraduate", destination: "europe", fieldOfStudy: "Architecture", intake: "winter", budget: "10k-20k" },
-      { fullName: "Rajesh Kumar", username: "rajesh.kumar", email: "rajesh.kumar@example.com", phoneNumber: "9800000016", studyLevel: "postgraduate", destination: "canada", fieldOfStudy: "Environmental Science", intake: "fall", budget: "20k-35k" },
-      { fullName: "Sophie Martin", username: "sophie.martin", email: "sophie.martin@example.com", phoneNumber: "9800000017", studyLevel: "undergraduate", destination: "uk", fieldOfStudy: "Medicine", intake: "spring", budget: "35k-plus" },
+      { fullName: "Alex Mercer", username: "alex.mercer", email: "alex.mercer@example.com", phoneNumber: "9800000010", studyLevel: "undergraduate" as const, destination: "usa" as const, fieldOfStudy: "Computer Science", intake: "fall" as const, budget: "20k-35k" as const },
+      { fullName: "Priya Sharma", username: "priya.sharma", email: "priya.sharma@example.com", phoneNumber: "9800000011", studyLevel: "postgraduate" as const, destination: "uk" as const, fieldOfStudy: "Business Administration", intake: "spring" as const, budget: "20k-35k" as const },
+      { fullName: "James Wilson", username: "james.wilson", email: "james.wilson@example.com", phoneNumber: "9800000012", studyLevel: "undergraduate" as const, destination: "canada" as const, fieldOfStudy: "Engineering", intake: "fall" as const, budget: "10k-20k" as const },
+      { fullName: "Aisha Patel", username: "aisha.patel", email: "aisha.patel@example.com", phoneNumber: "9800000013", studyLevel: "postgraduate" as const, destination: "australia" as const, fieldOfStudy: "Data Science", intake: "summer" as const, budget: "20k-35k" as const },
+      { fullName: "Daniel Kim", username: "daniel.kim", email: "daniel.kim@example.com", phoneNumber: "9800000014", studyLevel: "high-school" as const, destination: "usa" as const, fieldOfStudy: "General Studies", intake: "fall" as const, budget: "under-10k" as const },
+      { fullName: "Emma Thompson", username: "emma.thompson", email: "emma.thompson@example.com", phoneNumber: "9800000015", studyLevel: "undergraduate" as const, destination: "europe" as const, fieldOfStudy: "Architecture", intake: "winter" as const, budget: "10k-20k" as const },
+      { fullName: "Rajesh Kumar", username: "rajesh.kumar", email: "rajesh.kumar@example.com", phoneNumber: "9800000016", studyLevel: "postgraduate" as const, destination: "canada" as const, fieldOfStudy: "Environmental Science", intake: "fall" as const, budget: "20k-35k" as const },
+      { fullName: "Sophie Martin", username: "sophie.martin", email: "sophie.martin@example.com", phoneNumber: "9800000017", studyLevel: "undergraduate" as const, destination: "uk" as const, fieldOfStudy: "Medicine", intake: "spring" as const, budget: "35k-plus" as const },
     ];
 
     for (const s of students) {
       await UserModel.create({
         ...s,
         password: studentPassword,
-        role: "student",
+        role: "student" as const,
       });
       console.log(`Created student: ${s.email} (password: student123)`);
     }

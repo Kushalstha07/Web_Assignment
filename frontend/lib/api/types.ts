@@ -56,7 +56,7 @@ export interface AdminCreateUserPayload {
   intake: string;
   budget: string;
   password: string;
-  role?: "admin" | "user";
+  role?: "admin" | "counsellor" | "student";
 }
 
 export interface AdminUpdateUserPayload {
@@ -70,5 +70,5 @@ export interface AdminUpdateUserPayload {
   intake?: string;
   budget?: string;
   password?: string;
-  role?: "admin" | "user";
+  role?: "admin" | "counsellor" | "student";
 }
