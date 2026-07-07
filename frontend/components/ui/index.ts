@@ -10,3 +10,5 @@ export { Modal, type ModalProps } from "./Modal";
 export { Tabs, TabList, Tab, TabPanel, type TabsProps, type TabListProps, type TabProps, type TabPanelProps } from "./Tabs";
 export { Stepper, type StepperProps, type Step } from "./Stepper";
 export { ProgressBar, type ProgressBarProps } from "./ProgressBar";
+export { FileDropzone, type FileDropzoneProps } from "./FileDropzone";
+export { ToastProvider, useToast, type ToastVariant, type ToastData } from "./Toast";
