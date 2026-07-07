@@ -6,3 +6,4 @@ export { Avatar, type AvatarProps } from "./Avatar";
 export { Skeleton, SkeletonText, SkeletonCard, SkeletonTable, type SkeletonProps } from "./Skeleton";
 export { Select, type SelectProps, type SelectOption } from "./Select";
 export { Textarea, type TextareaProps } from "./Textarea";
+export { Modal, type ModalProps } from "./Modal";
