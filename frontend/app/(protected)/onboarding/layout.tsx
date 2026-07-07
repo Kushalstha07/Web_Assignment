@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { Stepper, Step } from "@/components/ui/Stepper";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { getMyProfile } from "@/lib/api/academic-profile.api";
 
 const steps: Step[] = [
   { title: "Personal Info", description: "Qualification & institution" },
@@ -18,6 +19,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
   const router = useRouter();
   const { user, loading } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
+  const [profileLoaded, setProfileLoaded] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -25,7 +27,24 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
     }
   }, [user, loading, router]);
 
-  if (loading) {
+  useEffect(() => {
+    async function checkProfile() {
+      if (!user) return;
+      try {
+        const result = await getMyProfile();
+        if (result.success && result.data) {
+          router.push("/onboarding/step-5");
+        }
+      } catch {
+        setCurrentStep(0);
+      } finally {
+        setProfileLoaded(true);
+      }
+    }
+    checkProfile();
+  }, [user, router]);
+
+  if (loading || !profileLoaded) {
     return (
       <div className="min-h-screen bg-[#F5F7FA] p-6 lg:p-8">
         <div className="mx-auto max-w-4xl">
