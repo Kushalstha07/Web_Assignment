@@ -7,3 +7,4 @@ export { Skeleton, SkeletonText, SkeletonCard, SkeletonTable, type SkeletonProps
 export { Select, type SelectProps, type SelectOption } from "./Select";
 export { Textarea, type TextareaProps } from "./Textarea";
 export { Modal, type ModalProps } from "./Modal";
+export { Tabs, TabList, Tab, TabPanel, type TabsProps, type TabListProps, type TabProps, type TabPanelProps } from "./Tabs";
