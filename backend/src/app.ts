@@ -4,6 +4,7 @@ import path from "path";
 import userRoutes from "./routes/user.route";
 import adminRoutes from "./routes/admin.route";
 import academicProfileRoutes from "./routes/academic-profile.route";
+import universityRoutes from "./routes/university.route";
 
 const app: Application = express();
 
@@ -31,6 +32,7 @@ app.get("/", (req: Request, res: Response) => {
 app.use("/api/v1/auth", userRoutes);
 app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/academic-profile", academicProfileRoutes);
+app.use("/api/v1/universities", universityRoutes);
 
 app.use((req: Request, res: Response) => {
   return res.status(404).json({
