@@ -1,7 +1,10 @@
 import mongoose, { Schema, Document } from "mongoose";
 import { UniversityType, countries, rankingLevels, courseTypes, budgetRanges } from "../types/university.type";
 
-export interface IUniversity extends Document, UniversityType {}
+export interface IUniversity extends Document, UniversityType {
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const UniversitySchema = new Schema<IUniversity>(
   {
