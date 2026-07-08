@@ -36,11 +36,11 @@ export class UniversityMongoRepository implements IUniversityRepository {
   }
 
   async getAllPaginated(filter: UniversityFilterDTOType): Promise<{ data: IUniversity[]; total: number; page: number; limit: number }> {
-    const query: Record<string, unknown> = { isActive: true };
+    const query: any = { isActive: true };
 
-    if (filter.country) query.country = filter.country as string;
-    if (filter.courseType) query.courseType = filter.courseType as string;
-    if (filter.budgetRange) query.budgetRange = filter.budgetRange as string;
+    if (filter.country) query.country = filter.country;
+    if (filter.courseType) query.courseType = filter.courseType;
+    if (filter.budgetRange) query.budgetRange = filter.budgetRange;
     if (filter.search) {
       query.$or = [
         { name: { $regex: filter.search, $options: "i" } },
