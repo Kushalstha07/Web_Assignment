@@ -6,7 +6,6 @@ import mongoose from "mongoose";
 const testUserId = new mongoose.Types.ObjectId().toString();
 const secretKey = process.env.SECRET_KEY || "edu-global-jwt-secret-key-2024-v1";
 const token = jsonwebtoken.sign({ id: testUserId, role: "admin" }, secretKey, { expiresIn: "1h" });
-const studentToken = jsonwebtoken.sign({ id: testUserId, role: "student" }, secretKey, { expiresIn: "1h" });
 
 describe("University API", () => {
   describe("GET /api/v1/universities", () => {
@@ -60,10 +59,10 @@ describe("University API", () => {
       expect(Array.isArray(res.body.data)).toBe(true);
     });
 
-    it("GET /api/v1/universities/:id handles missing id", async () => {
+    it("GET /api/v1/universities/:id returns 404 for missing id", async () => {
       const fakeId = new mongoose.Types.ObjectId().toString();
       const res = await request(app).get(`/api/v1/universities/${fakeId}`);
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
   });
 });

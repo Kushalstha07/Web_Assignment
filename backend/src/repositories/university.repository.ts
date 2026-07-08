@@ -59,14 +59,14 @@ export class UniversityMongoRepository implements IUniversityRepository {
   }
 
   async getByCountry(country: string): Promise<IUniversity[]> {
-    return University.find({ country, isActive: true }).sort({ worldRanking: 1 });
+    return University.find({ country: country as any, isActive: true }).sort({ worldRanking: 1 });
   }
 
   async getByBudgetRange(budgetRange: string): Promise<IUniversity[]> {
-    return University.find({ budgetRange, isActive: true }).sort({ tuitionFee: 1 });
+    return University.find({ budgetRange: budgetRange as any, isActive: true }).sort({ tuitionFee: 1 });
   }
 
   async getByCourseType(courseType: string): Promise<IUniversity[]> {
-    return University.find({ courseType, isActive: true }).sort({ worldRanking: 1 });
+    return University.find({ courseType: courseType as any, isActive: true }).sort({ worldRanking: 1 });
   }
 }

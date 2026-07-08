@@ -3,6 +3,7 @@ import { ApiResponseHelper } from "../uttils/apihelper.util";
 import { AcademicProfileService } from "../services/academic-profile.service";
 import { AcademicProfileType } from "../types/academic-profile.type";
 import { UpdateAcademicProfileDTO, Step1PersonalDTO, Step2AcademicDTO, Step3PreferencesDTO } from "../dtos/academic-profile.dto";
+import { HttpException } from "../exceptions/http-exception";
 
 const academicProfileService = new AcademicProfileService();
 
@@ -16,6 +17,9 @@ export class AcademicProfileController {
       const profile = await academicProfileService.getByUserId(userId);
       return ApiResponseHelper.success(res, profile, "Profile fetched successfully");
     } catch (error) {
+      if (error instanceof HttpException) {
+        return ApiResponseHelper.error(res, error.message, error.status);
+      }
       const message = error instanceof Error ? error.message : "Something went wrong";
       return ApiResponseHelper.error(res, message, 500);
     }
