@@ -1,0 +1,24 @@
+import { z } from "zod";
+import { applicationStatuses, applicationStages } from "../types/application.type";
+
+export const CreateApplicationDTO = z.object({
+  universityId: z.string().min(1, "University is required"),
+  program: z.string().min(1, "Program name is required"),
+  notes: z.string().max(1000).optional(),
+});
+
+export const UpdateApplicationDTO = z.object({
+  status: z.enum(applicationStatuses).optional(),
+  stage: z.enum(applicationStages).optional(),
+  program: z.string().min(1).optional(),
+  notes: z.string().max(1000).optional(),
+  documents: z.array(z.string()).optional(),
+});
+
+export const SubmitApplicationDTO = z.object({
+  submittedDate: z.string().min(1, "Submission date is required"),
+});
+
+export type CreateApplicationDTOType = z.infer<typeof CreateApplicationDTO>;
+export type UpdateApplicationDTOType = z.infer<typeof UpdateApplicationDTO>;
+export type SubmitApplicationDTOType = z.infer<typeof SubmitApplicationDTO>;
