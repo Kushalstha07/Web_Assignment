@@ -9,6 +9,7 @@ import applicationRoutes from "./routes/application.route";
 import documentRoutes from "./routes/document.route";
 import counsellorRoutes from "./routes/counsellor.route";
 import appointmentRoutes from "./routes/appointment.route";
+import messageRoutes from "./routes/message.route";
 
 const app: Application = express();
 
@@ -41,6 +42,7 @@ app.use("/api/v1/applications", applicationRoutes);
 app.use("/api/v1/documents", documentRoutes);
 app.use("/api/v1/counsellors", counsellorRoutes);
 app.use("/api/v1/appointments", appointmentRoutes);
+app.use("/api/v1/messages", messageRoutes);
 
 app.use((req: Request, res: Response) => {
   return res.status(404).json({
