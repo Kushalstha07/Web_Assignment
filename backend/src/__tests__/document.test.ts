@@ -1,19 +1,13 @@
 import request from "supertest";
-import mongoose from "mongoose";
 import path from "path";
 import fs from "fs";
 import app from "../app";
-import { DocumentModel } from "../models/document.model";
-import { UserModel } from "../models/user.model";
 
 let studentToken: string;
 let adminToken: string;
 let documentId: string;
 
 beforeAll(async () => {
-  const testUri = process.env.MONGODB_URI || "mongodb://localhost:27017/edu-global-test";
-  await mongoose.connect(testUri);
-
   // Register student
   await request(app).post("/api/v1/auth/register").send({
     fullName: "Doc Student",
@@ -54,12 +48,6 @@ beforeAll(async () => {
     password: "password123",
   });
   adminToken = adminRes.body.data.token;
-});
-
-afterAll(async () => {
-  await DocumentModel.deleteMany({});
-  await UserModel.deleteMany({ email: { $in: ["docstudent@test.com", "docadmin@test.com"] } });
-  await mongoose.disconnect();
 });
 
 describe("Document API", () => {

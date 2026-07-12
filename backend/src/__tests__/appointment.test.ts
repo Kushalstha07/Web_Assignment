@@ -1,16 +1,10 @@
 import request from "supertest";
-import mongoose from "mongoose";
 import app from "../app";
-import { AppointmentModel } from "../models/appointment.model";
-import { UserModel } from "../models/user.model";
 
 let studentToken: string;
 let appointmentId: string;
 
 beforeAll(async () => {
-  const testUri = process.env.MONGODB_URI || "mongodb://localhost:27017/edu-global-test";
-  await mongoose.connect(testUri);
-
   await request(app).post("/api/v1/auth/register").send({
     fullName: "Appt Student",
     username: "apptstudent",
@@ -29,12 +23,6 @@ beforeAll(async () => {
     password: "password123",
   });
   studentToken = studentRes.body.data.token;
-});
-
-afterAll(async () => {
-  await AppointmentModel.deleteMany({});
-  await UserModel.deleteMany({ email: "apptstudent@test.com" });
-  await mongoose.disconnect();
 });
 
 describe("Appointment API", () => {

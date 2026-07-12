@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Search, Sparkles, Bell, Plus, ChevronDown, User, Settings, HelpCircle, LogOut } from "lucide-react";
+import { Search, Sparkles, Bell, Plus, ChevronDown, User, Settings, HelpCircle, LogOut, CheckCheck, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
+import { deleteNotification, getNotifications, getUnreadCount, markAllNotificationsAsRead, markNotificationsAsRead, type Notification } from "@/lib/api/notification.api";
 
 const breadcrumbMap: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -33,6 +34,55 @@ export default function TopNav() {
   const { user, logout } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+
+  const refreshNotifications = useCallback(async () => {
+    if (!user) return;
+    try {
+      const [list, unread] = await Promise.all([getNotifications(1, 10), getUnreadCount()]);
+      setNotifications(list.data || []);
+      setUnreadCount(unread.data?.count || 0);
+    } catch {
+      setNotifications([]);
+    }
+  }, [user]);
+
+  useEffect(() => { void refreshNotifications(); }, [refreshNotifications]);
+
+  const openNotifications = async () => {
+    const next = !showNotifications;
+    setShowNotifications(next);
+    if (next) {
+      setNotificationsLoading(true);
+      await refreshNotifications();
+      setNotificationsLoading(false);
+    }
+  };
+
+  const openNotification = async (notification: Notification) => {
+    if (!notification.read) {
+      await markNotificationsAsRead([notification.id]);
+      setNotifications((current) => current.map((item) => item.id === notification.id ? { ...item, read: true } : item));
+      setUnreadCount((count) => Math.max(0, count - 1));
+    }
+    setShowNotifications(false);
+    if (notification.link) router.push(notification.link);
+  };
+
+  const markAllRead = async () => {
+    await markAllNotificationsAsRead();
+    setNotifications((current) => current.map((item) => ({ ...item, read: true })));
+    setUnreadCount(0);
+  };
+
+  const removeNotification = async (id: string) => {
+    const removed = notifications.find((item) => item.id === id);
+    await deleteNotification(id);
+    setNotifications((current) => current.filter((item) => item.id !== id));
+    if (removed && !removed.read) setUnreadCount((count) => Math.max(0, count - 1));
+  };
 
   const currentPage = breadcrumbMap[pathname] || "Dashboard";
   const initials = user?.fullName
@@ -79,31 +129,23 @@ export default function TopNav() {
           {/* Notifications */}
           <div className="relative">
             <button
-              onClick={() => setShowNotifications(!showNotifications)}
+              onClick={openNotifications}
               className="relative rounded-[12px] p-2 text-[#64748B] transition-all hover:bg-[#F8FAFC] hover:text-[#0F172A]"
             >
               <Bell className="h-5 w-5" />
-              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#EF4444]" />
+              {unreadCount > 0 && <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#EF4444] px-1 text-[10px] font-bold text-white">{unreadCount > 9 ? "9+" : unreadCount}</span>}
             </button>
 
             {showNotifications && (
               <div className="absolute right-0 mt-2 w-80 rounded-[20px] border border-[#E5E7EB] bg-white p-4 shadow-lg">
-                <h3 className="mb-3 text-sm font-bold text-[#0F172A]">Notifications</h3>
-                <div className="space-y-3">
-                  {[
-                    { title: "New application received", time: "2 min ago", unread: true },
-                    { title: "Visa approved for John Doe", time: "1 hour ago", unread: true },
-                    { title: "Document verification pending", time: "3 hours ago", unread: false },
-                  ].map((notification, idx) => (
-                    <div
-                      key={idx}
-                      className={cn(
-                        "rounded-xl p-3 transition-all",
-                        notification.unread ? "bg-[#EEF5FF]" : "hover:bg-[#F8FAFC]"
-                      )}
-                    >
-                      <p className="text-sm font-medium text-[#0F172A]">{notification.title}</p>
-                      <p className="mt-1 text-xs text-[#64748B]">{notification.time}</p>
+                <div className="mb-3 flex items-center justify-between"><h3 className="text-sm font-bold text-[#0F172A]">Notifications</h3>{unreadCount > 0 && <button onClick={markAllRead} className="flex items-center gap-1 text-xs font-semibold text-[#2563EB]"><CheckCheck className="h-3.5 w-3.5"/>Mark all read</button>}</div>
+                <div className="max-h-96 space-y-2 overflow-y-auto">
+                  {notificationsLoading && <p className="py-6 text-center text-sm text-[#64748B]">Loading…</p>}
+                  {!notificationsLoading && notifications.length === 0 && <p className="py-6 text-center text-sm text-[#64748B]">You are all caught up.</p>}
+                  {notifications.map((notification) => (
+                    <div key={notification.id} className={cn("group flex items-start gap-2 rounded-xl p-3 transition-all", !notification.read ? "bg-[#EEF5FF]" : "hover:bg-[#F8FAFC]")}>
+                      <button onClick={() => openNotification(notification)} className="min-w-0 flex-1 text-left"><p className="truncate text-sm font-medium text-[#0F172A]">{notification.title}</p><p className="mt-1 line-clamp-2 text-xs text-[#64748B]">{notification.message}</p><p className="mt-1 text-[10px] text-[#94A3B8]">{new Date(notification.createdAt).toLocaleString()}</p></button>
+                      <button aria-label="Delete notification" onClick={() => removeNotification(notification.id)} className="rounded-lg p-1 text-[#94A3B8] opacity-0 hover:bg-red-50 hover:text-red-600 group-hover:opacity-100"><Trash2 className="h-3.5 w-3.5"/></button>
                     </div>
                   ))}
                 </div>

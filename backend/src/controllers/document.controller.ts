@@ -3,6 +3,7 @@ import { ApiResponseHelper } from "../uttils/apihelper.util";
 import { documentService } from "../services/document.service";
 import { CreateDocumentDTO, VerifyDocumentDTO } from "../dtos/document.dto";
 import { HttpException } from "../exceptions/http-exception";
+import { unlink } from "fs/promises";
 
 export class DocumentController {
   async upload(req: Request, res: Response) {
@@ -13,6 +14,7 @@ export class DocumentController {
 
       const parsed = CreateDocumentDTO.safeParse(req.body);
       if (!parsed.success) {
+        await unlink(req.file.path).catch(() => undefined);
         const errors = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join(", ");
         return ApiResponseHelper.error(res, `Validation error: ${errors}`, 400);
       }

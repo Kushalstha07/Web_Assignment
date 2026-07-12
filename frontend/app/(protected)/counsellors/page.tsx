@@ -1,174 +1,76 @@
 "use client";
 
-import { useAuth } from "@/context/AuthContext";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AdminGuard } from "@/components/auth/AdminGuard";
-import { useEffect, useState } from "react";
-import { Card } from "@/components/ui/Card";
+import { CalendarPlus, Search, Star } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
-import { Avatar } from "@/components/ui/Avatar";
+import { Modal } from "@/components/ui/Modal";
 import { SkeletonCard } from "@/components/ui/Skeleton";
-import { Search, Star, UserPlus } from "lucide-react";
+import { createAppointment } from "@/lib/api/appointment.api";
+import { getCounsellors, type Counsellor } from "@/lib/api/counsellor.api";
 
-interface Counsellor {
-  id: string;
-  name: string;
-  email: string;
-  specialization: string;
-  studentsAssigned: number;
-  successRate: number;
-  rating: number;
-  status: "active" | "on_leave";
-  avatar?: string;
-}
+const specialties = ["university-admissions", "visa-guidance", "scholarship-advising", "career-counseling", "test-preparation", "general-advising"];
+const pretty = (value: string) => value.split("-").map((word) => word[0].toUpperCase() + word.slice(1)).join(" ");
 
 export default function CounsellorsPage() {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [specialization, setSpecialization] = useState("all");
+  const [counsellors, setCounsellors] = useState<Counsellor[]>([]);
+  const [query, setQuery] = useState("");
+  const [specialty, setSpecialty] = useState("");
+  const [availableOnly, setAvailableOnly] = useState(false);
+  const [selected, setSelected] = useState<Counsellor | null>(null);
+  const [date, setDate] = useState("");
+  const [startTime, setStartTime] = useState("10:00");
+  const [endTime, setEndTime] = useState("11:00");
+  const [notes, setNotes] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState("");
 
-  useEffect(() => {
-    if (!loading && !user) router.push("/login");
-  }, [user, loading, router]);
+  useEffect(() => { if (!authLoading && !user) router.push("/login"); }, [authLoading, user, router]);
+  const load = useCallback(async () => {
+    setLoading(true);
+    const response = await getCounsellors(availableOnly || undefined, specialty || undefined);
+    setCounsellors(response.data || []);
+    setLoading(false);
+  }, [availableOnly, specialty]);
+  useEffect(() => { if (user) void load(); }, [user, load]);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const filtered = useMemo(() => counsellors.filter((item) => `${item.fullName} ${item.email} ${item.specialties.join(" ")}`.toLowerCase().includes(query.toLowerCase())), [counsellors, query]);
 
-  if (loading || !mounted) {
-    return (
-      <div className="space-y-6">
-        <SkeletonCard />
-      </div>
-    );
+  async function book(event: FormEvent) {
+    event.preventDefault();
+    if (!selected) return;
+    try {
+      setSaving(true);
+      const response = await createAppointment({ counsellorId: selected.id, date, startTime, endTime, notes: notes || undefined });
+      if (!response.success) throw new Error(response.message);
+      setNotice(`Appointment booked with ${selected.fullName}.`);
+      setSelected(null);
+      setDate(""); setNotes("");
+    } catch (cause) { setNotice(cause instanceof Error ? cause.message : "Unable to book appointment"); }
+    finally { setSaving(false); }
   }
 
+  if (authLoading || loading) return <div className="grid gap-6 md:grid-cols-3">{[1,2,3].map((item) => <SkeletonCard key={item}/>)}</div>;
   if (!user) return null;
 
-  const mockCounsellors: Counsellor[] = [
-    { id: "1", name: "Sarah Williams", email: "sarah@eduglobal.com", specialization: "Study Visa", studentsAssigned: 45, successRate: 96, rating: 4.9, status: "active" },
-    { id: "2", name: "Michael Brown", email: "michael@eduglobal.com", specialization: "PR", studentsAssigned: 38, successRate: 94, rating: 4.8, status: "active" },
-    { id: "3", name: "Jennifer Taylor", email: "jennifer@eduglobal.com", specialization: "Language", studentsAssigned: 32, successRate: 92, rating: 4.7, status: "active" },
-    { id: "4", name: "David Kim", email: "david@eduglobal.com", specialization: "Work Permit", studentsAssigned: 28, successRate: 90, rating: 4.5, status: "on_leave" },
-    { id: "5", name: "Emily Chen", email: "emily@eduglobal.com", specialization: "Study Visa", studentsAssigned: 41, successRate: 95, rating: 4.8, status: "active" },
-    { id: "6", name: "Raj Patel", email: "raj@eduglobal.com", specialization: "PR", studentsAssigned: 35, successRate: 93, rating: 4.6, status: "active" },
-  ];
-
-  const filteredCounsellors = mockCounsellors.filter((counsellor) => {
-    const matchesSearch = counsellor.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = specialization === "all" || counsellor.specialization === specialization;
-    return matchesSearch && matchesFilter;
-  });
-
-  const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }).map((_, i) => (
-      <Star key={i} className={`h-4 w-4 ${i < Math.floor(rating) ? "text-[#F59E0B] fill-current" : "text-[#E5E7EB]"}`} />
-    ));
-  };
-
-  return (
-    <AdminGuard>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-[#0F172A]">Counsellors</h1>
-            <p className="mt-1 text-sm text-[#64748B]">Manage and monitor counsellor performance</p>
-          </div>
-          <Button variant="primary" size="md">
-            <UserPlus className="h-4 w-4" />
-            Add Counsellor
-          </Button>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-4">
-          <Card padding="md">
-            <p className="text-sm font-medium text-[#64748B]">Total Counsellors</p>
-            <p className="mt-2 text-2xl font-bold text-[#0F172A]">6</p>
-          </Card>
-          <Card padding="md">
-            <p className="text-sm font-medium text-[#64748B]">Active</p>
-            <p className="mt-2 text-2xl font-bold text-[#22C55E]">5</p>
-          </Card>
-          <Card padding="md">
-            <p className="text-sm font-medium text-[#64748B]">On Leave</p>
-            <p className="mt-2 text-2xl font-bold text-[#F59E0B]">1</p>
-          </Card>
-          <Card padding="md">
-            <p className="text-sm font-medium text-[#64748B]">New This Month</p>
-            <p className="mt-2 text-2xl font-bold text-[#2563EB]">3</p>
-          </Card>
-        </div>
-
-        <Card padding="md">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
-              <Input
-                placeholder="Search counsellors..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <select
-              value={specialization}
-              onChange={(e) => setSpecialization(e.target.value)}
-              className="rounded-xl border border-[#E5E7EB] px-4 py-2 text-sm text-[#0F172A] focus:border-[#2563EB] focus:outline-none"
-            >
-              <option value="all">All Specializations</option>
-              <option value="Study Visa">Study Visa</option>
-              <option value="PR">PR</option>
-              <option value="Language">Language</option>
-              <option value="Work Permit">Work Permit</option>
-            </select>
-          </div>
-        </Card>
-
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredCounsellors.map((counsellor) => (
-            <Card key={counsellor.id} padding="md" className="hover:shadow-md transition-all">
-              <div className="flex items-start gap-4 mb-4">
-                <Avatar src={counsellor.avatar} fallback={counsellor.name} size="lg" />
-                <div className="flex-1">
-                  <h3 className="text-base font-bold text-[#0F172A]">{counsellor.name}</h3>
-                  <p className="text-xs text-[#64748B]">{counsellor.email}</p>
-                  <div className="flex items-center gap-1 mt-1">
-                    {renderStars(counsellor.rating)}
-                    <span className="text-xs font-medium text-[#0F172A] ml-1">{counsellor.rating}</span>
-                  </div>
-                </div>
-                <Badge variant={counsellor.status === "active" ? "success" : "warning"} size="sm">
-                  {counsellor.status.replace("_", " ")}
-                </Badge>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between py-2 border-t border-[#E5E7EB]">
-                  <span className="text-xs font-medium text-[#64748B]">Specialization</span>
-                  <span className="text-xs font-semibold text-[#0F172A]">{counsellor.specialization}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-[#64748B]">Students Assigned</span>
-                  <span className="text-xs font-semibold text-[#0F172A]">{counsellor.studentsAssigned}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-[#64748B]">Success Rate</span>
-                  <span className="text-xs font-bold text-[#22C55E]">{counsellor.successRate}%</span>
-                </div>
-
-                <div className="flex gap-2 pt-3 border-t border-[#E5E7EB]">
-                  <Button variant="ghost" size="sm" className="flex-1">View Profile</Button>
-                  <Button variant="secondary" size="sm" className="flex-1">Assign Students</Button>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </div>
-    </AdminGuard>
-  );
+  return <div className="space-y-6">
+    <div><h1 className="text-3xl font-bold text-[#0F172A]">Counsellors</h1><p className="mt-1 text-sm text-[#64748B]">Find an adviser and book a real appointment.</p></div>
+    {notice && <div className="rounded-xl bg-[#EEF5FF] p-3 text-sm text-[#1D4ED8]">{notice}</div>}
+    <Card><div className="flex flex-col gap-3 md:flex-row"><div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]"/><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search counsellors" className="pl-10"/></div><select value={specialty} onChange={(event) => setSpecialty(event.target.value)} className="rounded-xl border px-4 text-sm"><option value="">All specialties</option>{specialties.map((item) => <option key={item} value={item}>{pretty(item)}</option>)}</select><label className="flex items-center gap-2 text-sm text-[#64748B]"><input type="checkbox" checked={availableOnly} onChange={(event) => setAvailableOnly(event.target.checked)}/>Available only</label></div></Card>
+    <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">{filtered.map((item) => <Card key={item.id} className="flex flex-col">
+      <div className="flex items-start gap-4"><Avatar src={item.imageUrl} fallback={item.fullName} size="lg"/><div className="min-w-0 flex-1"><h2 className="truncate font-bold text-[#0F172A]">{item.fullName}</h2><p className="truncate text-xs text-[#64748B]">{item.email}</p><div className="mt-1 flex items-center gap-1 text-sm"><Star className="h-4 w-4 fill-[#F59E0B] text-[#F59E0B]"/>{item.rating.toFixed(1)} <span className="text-[#94A3B8]">({item.reviewCount})</span></div></div><Badge variant={item.available ? "success" : "default"}>{item.available ? "Available" : "Unavailable"}</Badge></div>
+      <p className="mt-4 line-clamp-3 text-sm text-[#64748B]">{item.bio || "Experienced international education adviser."}</p><div className="mt-4 flex flex-wrap gap-2">{item.specialties.map((value) => <span key={value} className="rounded-full bg-[#EEF5FF] px-2 py-1 text-xs text-[#2563EB]">{pretty(value)}</span>)}</div>
+      <div className="mt-auto flex items-center justify-between border-t pt-4"><div><p className="text-xs text-[#64748B]">Experience</p><p className="text-sm font-semibold">{item.yearsOfExperience} years · ${item.hourlyRate}/hr</p></div><Button disabled={!item.available} onClick={() => setSelected(item)} size="sm"><CalendarPlus className="h-4 w-4"/>Book</Button></div>
+    </Card>)}</div>
+    {filtered.length === 0 && <Card><p className="text-center text-sm text-[#64748B]">No counsellors match these filters.</p></Card>}
+    <Modal isOpen={Boolean(selected)} onClose={() => setSelected(null)} title={`Book ${selected?.fullName || "counsellor"}`}><form onSubmit={book} className="space-y-4"><label className="block text-sm font-medium">Date<Input required min={new Date().toISOString().slice(0,10)} type="date" value={date} onChange={(event) => setDate(event.target.value)} className="mt-1"/></label><div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Start<Input required type="time" value={startTime} onChange={(event) => setStartTime(event.target.value)} className="mt-1"/></label><label className="text-sm font-medium">End<Input required type="time" value={endTime} onChange={(event) => setEndTime(event.target.value)} className="mt-1"/></label></div><label className="block text-sm font-medium">Notes<textarea value={notes} onChange={(event) => setNotes(event.target.value)} className="mt-1 min-h-24 w-full rounded-xl border p-3 text-sm" placeholder="What would you like to discuss?"/></label><Button type="submit" loading={saving} className="w-full">Confirm appointment</Button></form></Modal>
+  </div>;
 }

@@ -1,99 +1,60 @@
 "use client";
 
-import { useAuth } from "@/context/AuthContext";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AdminGuard } from "@/components/auth/AdminGuard";
-import { useEffect } from "react";
+import { ArrowRight, MapPin, Sparkles, Star } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Sparkles, TrendingUp, AlertTriangle, UserCheck, Lightbulb } from "lucide-react";
+import { SkeletonCard } from "@/components/ui/Skeleton";
+import { getMyProfile } from "@/lib/api/academic-profile.api";
+import { getUniversities, type University } from "@/lib/api/university.api";
+import type { AcademicProfile } from "@/lib/schemas/academic-profile.schema";
+
+type Match = University & { score: number; reasons: string[] };
+
+function scoreUniversity(university: University, profile: AcademicProfile | null): Match {
+  let score = 45;
+  const reasons: string[] = [];
+  if (profile?.preferredCountries?.includes(university.country)) { score += 25; reasons.push("Preferred destination"); }
+  if (profile?.tuitionBudget && profile.tuitionBudget === university.budgetRange) { score += 20; reasons.push("Matches your budget"); }
+  if (profile?.fieldOfStudy && university.programs.some((program) => program.toLowerCase().includes(profile.fieldOfStudy.toLowerCase()) || profile.fieldOfStudy.toLowerCase().includes(program.toLowerCase()))) { score += 15; reasons.push("Offers your study field"); }
+  if ((profile?.gpa || 0) >= 3.5 && ["top-10", "top-50"].includes(university.ranking)) { score += 5; reasons.push("Strong academic fit"); }
+  if (!reasons.length) reasons.push("Broad profile match");
+  return { ...university, score: Math.min(100, score), reasons };
+}
 
 export default function RecommendationsPage() {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const [profile, setProfile] = useState<AcademicProfile | null>(null);
+  const [universities, setUniversities] = useState<University[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
+  useEffect(() => { if (!authLoading && !user) router.push("/login"); }, [authLoading, user, router]);
   useEffect(() => {
-    if (!loading && !user) router.push("/login");
-  }, [user, loading, router]);
+    if (!user) return;
+    void Promise.all([getMyProfile(), getUniversities({ limit: 100 })]).then(([profileResult, universityResult]) => {
+      if (profileResult.success) setProfile(profileResult.data);
+      setUniversities(universityResult.data || []);
+    }).catch((cause) => setError(cause instanceof Error ? cause.message : "Unable to create recommendations")).finally(() => setLoading(false));
+  }, [user]);
 
-  if (loading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-[#1565D8]" />
-      </div>
-    );
-  }
-
+  const matches = useMemo(() => universities.map((university) => scoreUniversity(university, profile)).sort((a, b) => b.score - a.score).slice(0, 9), [universities, profile]);
+  if (authLoading || loading) return <div className="grid gap-6 md:grid-cols-3">{[1,2,3].map((item) => <SkeletonCard key={item}/>)}</div>;
   if (!user) return null;
 
-  return (
-    <AdminGuard>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-[#0F172A]">AI Recommendations</h1>
-            <p className="mt-1 text-sm text-[#64748B]">Smart insights and action items for your consultancy</p>
-          </div>
-          <Button variant="primary" size="md">
-            <Sparkles className="h-4 w-4" />
-            Generate New Insights
-          </Button>
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card padding="md">
-            <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#F0FDF4]">
-                <TrendingUp className="h-6 w-6 text-[#22C55E]" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-[#0F172A]">Student approval rate increased by 12% this week compared to last week</h3>
-                <p className="mt-2 text-sm text-[#64748B]">Based on analysis of 245 applications processed in the last 7 days across all destinations.</p>
-                <Button variant="ghost" size="sm" className="mt-3 !p-0 !h-auto text-[#2563EB] font-semibold">View Details</Button>
-              </div>
-            </div>
-          </Card>
-
-          <Card padding="md">
-            <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#FFF9EE]">
-                <AlertTriangle className="h-6 w-6 text-[#F59E0B]" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-[#0F172A]">Visa delays detected for 3 students applying to UK universities</h3>
-                <p className="mt-2 text-sm text-[#64748B]">Average processing time has increased from 15 to 23 days. Consider notifying affected students.</p>
-                <Button variant="ghost" size="sm" className="mt-3 !p-0 !h-auto text-[#2563EB] font-semibold">View Details</Button>
-              </div>
-            </div>
-          </Card>
-
-          <Card padding="md">
-            <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#EEF5FF]">
-                <Lightbulb className="h-6 w-6 text-[#2563EB]" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-[#0F172A]">UK applications growing by 18% - highest in 6 months</h3>
-                <p className="mt-2 text-sm text-[#64748B]">Consider increasing capacity for UK university applications and allocating additional counsellors.</p>
-                <Button variant="ghost" size="sm" className="mt-3 !p-0 !h-auto text-[#2563EB] font-semibold">View Details</Button>
-              </div>
-            </div>
-          </Card>
-
-          <Card padding="md">
-            <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-purple-100">
-                <UserCheck className="h-6 w-6 text-[#7C3AED]" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-[#0F172A]">AI recommends contacting 8 students with pending applications</h3>
-                <p className="mt-2 text-sm text-[#64748B]">These students have had no updates in over 14 days and may need additional support.</p>
-                <Button variant="ghost" size="sm" className="mt-3 !p-0 !h-auto text-[#2563EB] font-semibold">View Details</Button>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </div>
-    </AdminGuard>
-  );
+  return <div className="space-y-6">
+    <div className="flex items-start justify-between"><div><h1 className="text-3xl font-bold text-[#0F172A]">University Recommendations</h1><p className="mt-1 text-sm text-[#64748B]">Personalised using your profile, destinations, budget, GPA, and field of study.</p></div><div className="rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB] p-3 text-white"><Sparkles className="h-6 w-6"/></div></div>
+    {!profile && <Card className="border-[#F59E0B]/40 bg-[#FFF9EE]"><p className="text-sm text-[#92400E]">Complete your academic profile to improve these matches. <Link href="/onboarding/step-1" className="font-semibold underline">Complete profile</Link></p></Card>}
+    {error && <div className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+    <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">{matches.map((item) => <Card key={item.id} className="flex flex-col">
+      <div className="flex items-start justify-between"><div><h2 className="font-bold text-[#0F172A]">{item.name}</h2><p className="mt-1 flex items-center gap-1 text-xs text-[#64748B]"><MapPin className="h-3.5 w-3.5"/>{item.city}, {item.country.toUpperCase()}</p></div><div className="rounded-full bg-[#F0FDF4] px-3 py-1 text-sm font-bold text-[#16A34A]">{item.score}%</div></div>
+      <div className="mt-4 flex items-center justify-between text-sm"><span className="flex items-center gap-1"><Star className="h-4 w-4 fill-[#F59E0B] text-[#F59E0B]"/>{item.rating || "New"}</span><span className="text-[#64748B]">Rank {item.worldRanking || item.ranking}</span></div><p className="mt-3 text-sm text-[#64748B]">${item.tuitionFee.toLocaleString()} tuition · {item.courseType}</p><div className="mt-4 flex flex-wrap gap-2">{item.reasons.map((reason) => <Badge key={reason} variant="info">{reason}</Badge>)}</div>
+      <Link href={`/universities/${item.id}`} className="mt-5 flex items-center justify-end gap-1 border-t pt-4 text-sm font-semibold text-[#2563EB]">View university <ArrowRight className="h-4 w-4"/></Link>
+    </Card>)}</div>
+    {!matches.length && <Card><p className="text-center text-sm text-[#64748B]">No universities are available yet. Run the backend seed to add the catalogue.</p></Card>}
+  </div>;
 }

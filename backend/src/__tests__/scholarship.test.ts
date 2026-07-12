@@ -1,16 +1,10 @@
 import request from "supertest";
-import mongoose from "mongoose";
 import app from "../app";
-import { ScholarshipModel } from "../models/scholarship.model";
-import { UserModel } from "../models/user.model";
 
 let adminToken: string;
 let scholarshipId: string;
 
 beforeAll(async () => {
-  const testUri = process.env.MONGODB_URI || "mongodb://localhost:27017/edu-global-test";
-  await mongoose.connect(testUri);
-
   await request(app).post("/api/v1/auth/register").send({
     fullName: "Scholarship Admin",
     username: "scholadmin",
@@ -30,12 +24,6 @@ beforeAll(async () => {
     password: "password123",
   });
   adminToken = adminRes.body.data.token;
-});
-
-afterAll(async () => {
-  await ScholarshipModel.deleteMany({});
-  await UserModel.deleteMany({ email: "scholadmin@test.com" });
-  await mongoose.disconnect();
 });
 
 describe("Scholarship API", () => {

@@ -33,3 +33,28 @@ export const upload = multer({
     fileSize: 5 * 1024 * 1024, // 5MB
   },
 });
+
+const documentFileFilter = (
+  _req: Express.Request,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback,
+) => {
+  const allowedMimes = [
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "text/plain",
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+  ];
+
+  if (allowedMimes.includes(file.mimetype)) cb(null, true);
+  else cb(new Error("Only PDF, DOC, DOCX, TXT, JPEG, PNG and WebP documents are allowed."));
+};
+
+export const documentUpload = multer({
+  storage,
+  fileFilter: documentFileFilter,
+  limits: { fileSize: 10 * 1024 * 1024 },
+});

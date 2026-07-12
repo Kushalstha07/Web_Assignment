@@ -3,6 +3,8 @@ import { DocumentType } from "../types/document.type";
 import { CreateDocumentDTOType, UpdateDocumentDTOType, VerifyDocumentDTOType } from "../dtos/document.dto";
 import { HttpException } from "../exceptions/http-exception";
 import { IDocument } from "../models/document.model";
+import { unlink } from "fs/promises";
+import path from "path";
 
 const docRepo = new DocumentMongoRepository();
 
@@ -103,7 +105,11 @@ export class DocumentService {
     if (role !== "admin" && doc.userId !== userId) {
       throw new HttpException(403, "You can only delete your own documents");
     }
-    return docRepo.delete(id);
+    const deleted = await docRepo.delete(id);
+    if (deleted) {
+      await unlink(path.join(__dirname, "../../public/uploads", doc.fileName)).catch(() => undefined);
+    }
+    return deleted;
   }
 }
 

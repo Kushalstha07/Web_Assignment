@@ -5,6 +5,9 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { getUsers } from "@/lib/api/admin.api";
 import type { AdminUser } from "@/lib/api/types";
+import { getMyApplications, type Application } from "@/lib/api/application.api";
+import { getScholarships, type Scholarship } from "@/lib/api/scholarship.api";
+import { getUniversities, type University } from "@/lib/api/university.api";
 import { Users, FileText, TrendingUp, Building2, Sparkles, AlertTriangle, UserCheck, FileCheck, GraduationCap, Calendar, ArrowRight, CheckCircle, Clock, Award } from "lucide-react";
 import { KPICard } from "@/components/admin/KPICard";
 import { AIInsights } from "@/components/admin/AIInsights";
@@ -261,18 +264,33 @@ function AdminDashboard() {
 
 function StudentDashboard() {
   const { user } = useAuth();
+  const [studentApplications, setStudentApplications] = useState<Application[]>([]);
+  const [universities, setUniversities] = useState<University[]>([]);
+  const [scholarships, setScholarships] = useState<Scholarship[]>([]);
+  const [studentLoading, setStudentLoading] = useState(true);
 
-  const applications = [
-    { university: "University of Toronto", program: "MSc Computer Science", status: "In Progress", deadline: "Aug 15, 2025" },
-    { university: "University of Melbourne", program: "MEng Software Engineering", status: "Draft", deadline: "Sep 1, 2025" },
-  ];
+  useEffect(() => {
+    void Promise.all([getMyApplications(), getUniversities({ limit: 100 }), getScholarships({ status: "active", limit: 10 })])
+      .then(([applicationResult, universityResult, scholarshipResult]) => {
+        setStudentApplications(applicationResult.data || []);
+        setUniversities(universityResult.data || []);
+        setScholarships(scholarshipResult.data || []);
+      }).finally(() => setStudentLoading(false));
+  }, []);
 
-  const upcomingTasks = [
-    { task: "Upload Transcripts", due: "Jul 10, 2025", completed: false },
-    { task: "Submit Statement of Purpose", due: "Jul 15, 2025", completed: false },
-    { task: "Schedule Visa Interview", due: "Aug 1, 2025", completed: true },
-    { task: "Complete Language Test", due: "Aug 10, 2025", completed: true },
-  ];
+  const universityNames = new Map(universities.map((university) => [university.id, university.name]));
+  const applications = studentApplications.map((application) => ({
+    university: universityNames.get(application.universityId) || "University application",
+    program: application.program,
+    status: application.status,
+    deadline: application.submittedDate ? `Submitted ${new Date(application.submittedDate).toLocaleDateString()}` : `Updated ${new Date(application.updatedAt).toLocaleDateString()}`,
+  }));
+
+  const upcomingTasks = scholarships.slice(0, 4).map((scholarship) => ({
+    task: scholarship.name,
+    due: scholarship.deadline ? new Date(scholarship.deadline).toLocaleDateString() : "Open deadline",
+    completed: scholarship.status !== "active",
+  }));
 
   return (
     <div className="space-y-6">
@@ -293,7 +311,7 @@ function StudentDashboard() {
             </div>
             <div>
               <p className="text-sm text-[#64748B]">Applications</p>
-              <p className="text-2xl font-bold text-[#0F172A]">{applications.length}</p>
+              <p className="text-2xl font-bold text-[#0F172A]">{studentLoading ? "…" : applications.length}</p>
             </div>
           </div>
         </Card>
@@ -304,7 +322,7 @@ function StudentDashboard() {
             </div>
             <div>
               <p className="text-sm text-[#64748B]">Documents</p>
-              <p className="text-2xl font-bold text-[#0F172A]">{upcomingTasks.filter(t => t.completed).length}/4</p>
+              <p className="text-2xl font-bold text-[#0F172A]">{studentApplications.filter((application) => application.stage === "verified").length}</p>
             </div>
           </div>
         </Card>
@@ -326,7 +344,7 @@ function StudentDashboard() {
             </div>
             <div>
               <p className="text-sm text-[#64748B]">Scholarships</p>
-              <p className="text-2xl font-bold text-[#0F172A]">3</p>
+              <p className="text-2xl font-bold text-[#0F172A]">{studentLoading ? "…" : scholarships.length}</p>
             </div>
           </div>
         </Card>
@@ -350,7 +368,7 @@ function StudentDashboard() {
                     <h4 className="font-semibold text-[#0F172A]">{app.university}</h4>
                     <p className="text-sm text-[#64748B] mt-0.5">{app.program}</p>
                   </div>
-                  <Badge variant={app.status === "In Progress" ? "warning" : "default"} size="sm">{app.status}</Badge>
+                  <Badge variant={app.status === "accepted" ? "success" : app.status === "submitted" || app.status === "under-review" ? "warning" : "default"} size="sm">{app.status}</Badge>
                 </div>
                 <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#E5E7EB]">
                   <span className="text-xs text-[#94A3B8]">Deadline: {app.deadline}</span>
@@ -360,6 +378,7 @@ function StudentDashboard() {
                 </div>
               </div>
             ))}
+            {!studentLoading && applications.length === 0 && <p className="py-8 text-center text-sm text-[#64748B]">No applications yet. Browse universities to start one.</p>}
           </div>
         </Card>
 
@@ -369,7 +388,7 @@ function StudentDashboard() {
           <Card padding="md">
             <h3 className="text-lg font-bold text-[#0F172A] mb-4">To-Do List</h3>
             <div className="space-y-3">
-              {upcomingTasks.map((task, idx) => (
+            {upcomingTasks.map((task, idx) => (
                 <div key={idx} className="flex items-start gap-3">
                   <div className={`flex h-5 w-5 items-center justify-center rounded-full mt-0.5 ${
                     task.completed ? "bg-[#22C55E]" : "border-2 border-[#D1D5DB]"
@@ -383,7 +402,8 @@ function StudentDashboard() {
                     <p className="text-xs text-[#94A3B8]">Due: {task.due}</p>
                   </div>
                 </div>
-              ))}
+            ))}
+            {!studentLoading && upcomingTasks.length === 0 && <p className="text-sm text-[#64748B]">No upcoming scholarship deadlines.</p>}
             </div>
           </Card>
 
