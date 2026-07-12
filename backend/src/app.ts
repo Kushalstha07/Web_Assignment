@@ -11,6 +11,7 @@ import counsellorRoutes from "./routes/counsellor.route";
 import appointmentRoutes from "./routes/appointment.route";
 import messageRoutes from "./routes/message.route";
 import scholarshipRoutes from "./routes/scholarship.route";
+import notificationRoutes from "./routes/notification.route";
 
 const app: Application = express();
 
@@ -45,6 +46,7 @@ app.use("/api/v1/counsellors", counsellorRoutes);
 app.use("/api/v1/appointments", appointmentRoutes);
 app.use("/api/v1/messages", messageRoutes);
 app.use("/api/v1/scholarships", scholarshipRoutes);
+app.use("/api/v1/notifications", notificationRoutes);
 
 app.use((req: Request, res: Response) => {
   return res.status(404).json({
