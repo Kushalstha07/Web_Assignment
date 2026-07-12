@@ -146,19 +146,19 @@ export default function ApplicationsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-[#0F172A]">Applications</h1>
           <p className="mt-1 text-sm text-[#64748B]">Track and manage all student applications</p>
         </div>
-        <Button>
+        <Button className="w-full sm:w-auto">
           <Plus className="h-4 w-4" />
           New Application
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-6 md:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card padding="md">
           <div className="flex items-center justify-between">
             <div>
@@ -215,8 +215,8 @@ export default function ApplicationsPage() {
               className="pl-10"
             />
           </div>
-          <div className="flex gap-3">
-            <select className="h-11 rounded-[12px] border border-[#E5E7EB] bg-white px-4 pr-10 text-sm text-[#0F172A] outline-none transition-all hover:border-[#CBD5E1] focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/15">
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <select className="h-11 flex-1 rounded-[12px] border border-[#E5E7EB] bg-white px-4 pr-10 text-sm text-[#0F172A] outline-none transition-all hover:border-[#CBD5E1] focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/15">
               <option>All Status</option>
               <option>Pending</option>
               <option>In Progress</option>
@@ -234,7 +234,7 @@ export default function ApplicationsPage() {
       {/* Applications Table */}
       <div className="rounded-[20px] border border-[#E5E7EB] bg-white shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="min-w-[1100px] w-full">
             <thead>
               <tr className="border-b border-[#E5E7EB] bg-[#F8FAFC]">
                 <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#64748B]">Student</th>
@@ -305,7 +305,7 @@ export default function ApplicationsPage() {
 
         {/* Pagination */}
         <div className="border-t border-[#E5E7EB] px-6 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-[#64748B]">
               Showing {mockApplications.length} of {mockApplications.length} applications
             </p>

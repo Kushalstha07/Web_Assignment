@@ -49,15 +49,16 @@ export default function AdminUsersPage() {
       } else {
         setError(response.message || "Failed to fetch users");
       }
-    } catch (err: any) {
-      setError(err.message || "An unexpected error occurred");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
       setLoading(false);
     }
   }, [page, search]);
 
   useEffect(() => {
-    fetchUsers();
+    const timer = window.setTimeout(() => void fetchUsers(), 0);
+    return () => window.clearTimeout(timer);
   }, [fetchUsers]);
 
   // Debounced search
@@ -83,8 +84,8 @@ export default function AdminUsersPage() {
       setShowForm(false);
       setEditingUser(null);
       fetchUsers();
-    } catch (err: any) {
-      alert(err.message || "Failed to save user");
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Failed to save user");
     } finally {
       setIsSaving(false);
     }
@@ -98,8 +99,8 @@ export default function AdminUsersPage() {
       if (!res.success) throw new Error(res.message);
       setDeletingUser(null);
       fetchUsers();
-    } catch (err: any) {
-      alert(err.message || "Failed to delete user");
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Failed to delete user");
     } finally {
       setIsDeleting(false);
     }
@@ -135,14 +136,14 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#0F172A]">User Management</h1>
-          <p className="text-sm text-[#64748B]">Manage all registered users</p>
+          <h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">User Management</h1>
+          <p className="mt-1 text-sm text-[#64748B]">Create accounts, assign roles, and manage access.</p>
         </div>
         <button
           onClick={openCreateForm}
-          className="flex h-11 items-center gap-2 rounded-xl bg-[#1D4ED8] px-5 text-sm font-bold text-white shadow-lg shadow-[#1D4ED8]/20 transition-all hover:shadow-xl"
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#1D4ED8] px-5 text-sm font-bold text-white shadow-lg shadow-[#1D4ED8]/20 transition-all hover:-translate-y-0.5 hover:shadow-xl sm:w-auto"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="5" x2="12" y2="19" />
@@ -152,8 +153,14 @@ export default function AdminUsersPage() {
         </button>
       </div>
 
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="rounded-2xl border border-[#E7EDF6] bg-white p-4 shadow-sm"><p className="text-xs font-bold uppercase tracking-wider text-[#94A3B8]">Total accounts</p><p className="mt-2 text-2xl font-bold text-[#0F172A]">{meta?.total ?? users.length}</p></div>
+        <div className="rounded-2xl border border-[#E7EDF6] bg-white p-4 shadow-sm"><p className="text-xs font-bold uppercase tracking-wider text-[#94A3B8]">Admins on page</p><p className="mt-2 text-2xl font-bold text-[#7C3AED]">{users.filter((item) => item.role === "admin").length}</p></div>
+        <div className="rounded-2xl border border-[#E7EDF6] bg-white p-4 shadow-sm"><p className="text-xs font-bold uppercase tracking-wider text-[#94A3B8]">Students on page</p><p className="mt-2 text-2xl font-bold text-[#2563EB]">{users.filter((item) => item.role === "student").length}</p></div>
+      </div>
+
       {/* Search */}
-      <div className="relative">
+      <div className="relative rounded-2xl border border-[#E7EDF6] bg-white p-4 shadow-sm">
         <svg
           className="absolute left-4 top-1/2 -translate-y-1/2 text-[#94A3B8]"
           width="18"
@@ -173,7 +180,7 @@ export default function AdminUsersPage() {
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           placeholder="Search by name or email..."
-          className="h-12 w-full max-w-md rounded-xl border border-[#E2E8F0] bg-white pl-11 pr-4 text-sm text-[#0F172A] outline-none transition placeholder:text-[#94A3B8] focus:border-[#1D4ED8] focus:ring-2 focus:ring-[#1D4ED8]/15"
+          className="h-12 w-full rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] pl-11 pr-4 text-sm text-[#0F172A] outline-none transition placeholder:text-[#94A3B8] focus:border-[#1D4ED8] focus:bg-white focus:ring-2 focus:ring-[#1D4ED8]/15 sm:max-w-lg"
         />
       </div>
 
@@ -220,11 +227,11 @@ export default function AdminUsersPage() {
           )}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-[#E8EEF7] bg-white">
-          <table className="w-full">
+        <div className="overflow-x-auto rounded-2xl border border-[#E8EEF7] bg-white shadow-sm">
+          <table className="min-w-[760px] w-full">
             <thead>
               <tr className="border-b border-[#E8EEF7] bg-[#F8FAFD]">
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#64748B]">ID</th>
+                <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#64748B] xl:table-cell">ID</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#64748B]">Name</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#64748B]">Email</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#64748B]">Role</th>
@@ -235,7 +242,7 @@ export default function AdminUsersPage() {
             <tbody className="divide-y divide-[#E8EEF7]">
               {users.map((u) => (
                 <tr key={u.id} className="transition-all hover:bg-[#F8FAFD]">
-                  <td className="whitespace-nowrap px-4 py-3 text-xs font-mono text-[#64748B]">{u.id.slice(-8)}</td>
+                  <td className="hidden whitespace-nowrap px-4 py-3 text-xs font-mono text-[#64748B] xl:table-cell">{u.id.slice(-8)}</td>
                   <td className="whitespace-nowrap px-4 py-3">
                     <div className="flex items-center gap-3">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#EEF5FF] text-xs font-bold text-[#1565D8]">
@@ -288,7 +295,7 @@ export default function AdminUsersPage() {
 
           {/* Pagination */}
           {meta && meta.totalPages > 1 && (
-            <div className="flex items-center justify-between border-t border-[#E8EEF7] px-4 py-3">
+            <div className="flex min-w-[760px] items-center justify-between border-t border-[#E8EEF7] px-4 py-3">
               <p className="text-sm text-[#64748B]">
                 Showing {(meta.page - 1) * meta.limit + 1}–{Math.min(meta.page * meta.limit, meta.total)} of {meta.total}
               </p>

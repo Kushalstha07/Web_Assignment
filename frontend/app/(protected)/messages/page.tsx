@@ -69,10 +69,10 @@ export default function MessagesPage() {
   if (!user) return null;
 
   return <div className="space-y-6">
-    <div><h1 className="text-3xl font-bold text-[#0F172A]">Messages</h1><p className="mt-1 text-sm text-[#64748B]">Your real conversations, synced with the messaging API.</p></div>
+    <div><h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">Messages</h1><p className="mt-1 text-sm text-[#64748B]">Your real conversations, synced with the messaging API.</p></div>
     {error && <div className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</div>}
-    <div className="grid h-[calc(100vh-210px)] gap-6 lg:grid-cols-3">
-      <Card padding="none" className="flex flex-col overflow-hidden">
+    <div className="grid gap-4 lg:h-[calc(100vh-210px)] lg:grid-cols-3">
+      <Card padding="none" className="flex h-80 flex-col overflow-hidden lg:h-auto">
         <div className="border-b p-4"><div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]"/><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search conversations" className="pl-10"/></div></div>
         <div className="flex-1 overflow-y-auto">
           {filtered.length === 0 && <p className="p-6 text-center text-sm text-[#64748B]">No conversations yet.</p>}
@@ -81,7 +81,7 @@ export default function MessagesPage() {
           </button>)}
         </div>
       </Card>
-      <Card padding="none" className="flex flex-col overflow-hidden lg:col-span-2">
+      <Card padding="none" className="flex h-[560px] flex-col overflow-hidden lg:col-span-2 lg:h-auto">
         <div className="flex items-center gap-3 border-b p-4"><Avatar fallback={selected?.title || "Chat"}/><div><p className="font-semibold text-[#0F172A]">{selected?.title || "Select a conversation"}</p><p className="text-xs text-[#64748B]">{selected ? `${selected.participants.length} participants` : ""}</p></div></div>
         <div className="flex-1 space-y-3 overflow-y-auto bg-[#F8FAFC]/60 p-4">
           {selected && messages.length === 0 && <p className="text-center text-sm text-[#64748B]">Start the conversation.</p>}

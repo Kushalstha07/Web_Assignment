@@ -104,7 +104,7 @@ function PipelineColumn({ stage, students }: PipelineColumnProps) {
   return (
     <div
       className={cn(
-        "flex min-w-[280px] flex-col rounded-[20px] border-2 border-dashed bg-[#F8FAFC] p-4 transition-all",
+        "flex min-w-[260px] flex-col rounded-[18px] border border-[#E5E7EB] bg-[#F8FAFC] p-3.5 transition-all sm:min-w-[280px] sm:p-4",
         isOver ? "border-[#2563EB] bg-[#EEF5FF]" : "border-[#E5E7EB]"
       )}
       onDragOver={() => setIsOver(true)}
@@ -175,7 +175,7 @@ export function StudentPipeline({ students }: { students: Student[] }) {
       }
 
       // Add to new stage
-      if (student && PIPELINE_STAGES.includes(newStage as any)) {
+      if (student && (PIPELINE_STAGES as readonly string[]).includes(newStage)) {
         student = { ...student, stage: newStage };
         newData[newStage] = [...(newData[newStage] || []), student];
       }
@@ -187,17 +187,17 @@ export function StudentPipeline({ students }: { students: Student[] }) {
   const activeStudent = activeId ? students.find(s => s.id === activeId) : null;
 
   return (
-    <div className="rounded-[20px] border border-[#E5E7EB] bg-white p-6 shadow-sm">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="rounded-[20px] border border-[#E5E7EB] bg-white p-4 shadow-sm sm:p-6">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-xl font-bold text-[#0F172A]">Student Pipeline</h2>
           <p className="mt-1 text-sm text-[#64748B]">Drag and drop students between stages</p>
         </div>
         <div className="flex gap-2">
-          <button className="rounded-[12px] border border-[#E5E7EB] px-4 py-2 text-sm font-semibold text-[#64748B] hover:bg-[#F8FAFC]">
+          <button className="flex-1 rounded-[12px] border border-[#E5E7EB] px-4 py-2 text-sm font-semibold text-[#64748B] hover:bg-[#F8FAFC] sm:flex-none">
             Filter
           </button>
-          <button className="rounded-[12px] bg-[#2563EB] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1D4ED8]">
+          <button className="flex-1 rounded-[12px] bg-[#2563EB] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1D4ED8] sm:flex-none">
             Add Student
           </button>
         </div>
@@ -209,7 +209,7 @@ export function StudentPipeline({ students }: { students: Student[] }) {
         onDragEnd={handleDragEnd}
         modifiers={[restrictToHorizontalAxis]}
       >
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <div className="admin-scrollbar -mx-1 flex snap-x gap-4 overflow-x-auto px-1 pb-4">
           {PIPELINE_STAGES.map((stage) => (
             <PipelineColumn
               key={stage}

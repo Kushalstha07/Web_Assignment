@@ -31,16 +31,16 @@ export default function AnalyticsPage() {
       }).catch((cause) => setError(cause instanceof Error ? cause.message : "Unable to load analytics")).finally(() => setLoading(false));
   }, [user]);
 
-  if (authLoading || loading) return <div className="grid gap-6 md:grid-cols-4">{[1,2,3,4].map((item) => <SkeletonCard key={item}/>)}</div>;
+  if (authLoading || loading) return <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[1,2,3,4].map((item) => <SkeletonCard key={item}/>)}</div>;
   if (!user) return null;
   const monthlyData: BarChartData[] = growth.map((item) => ({ name: item.month, value: item.count, color: "#2563EB" }));
   const regionalData: BarChartData[] = regional.map((item) => ({ name: item.country?.toUpperCase() || "Unknown", value: item.count, color: "#7C3AED" }));
   const topData: BarChartData[] = top.map((item) => ({ name: item.universityId.slice(-6), value: item.applicationCount, color: "#22C55E" }));
 
   return <AdminGuard><div className="space-y-6">
-    <div><h1 className="text-3xl font-bold text-[#0F172A]">Analytics Dashboard</h1><p className="mt-1 text-sm text-[#64748B]">Live metrics calculated from application data.</p></div>
+    <div><h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">Analytics Dashboard</h1><p className="mt-1 text-sm text-[#64748B]">Live metrics calculated from application data.</p></div>
     {error && <div className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</div>}
-    <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">{[
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[
       { label: "Total users", value: totals?.totalUsers ?? 0, icon: Users, color: "text-[#2563EB]", bg: "bg-[#EEF5FF]" },
       { label: "Applications", value: totals?.totalApplications ?? 0, icon: FileCheck, color: "text-[#7C3AED]", bg: "bg-purple-100" },
       { label: "Universities", value: totals?.totalUniversities ?? 0, icon: Building2, color: "text-[#F59E0B]", bg: "bg-[#FFF9EE]" },

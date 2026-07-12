@@ -53,7 +53,7 @@ export default function PipelinePage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-[#0F172A]">Student Pipeline</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">Student Pipeline</h1>
           <p className="mt-1 text-sm text-[#64748B]">Loading...</p>
         </div>
         <SkeletonCard />
@@ -83,7 +83,7 @@ export default function PipelinePage() {
     <AdminGuard>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-[#0F172A]">Student Pipeline</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">Student Pipeline</h1>
           <p className="mt-1 text-sm text-[#64748B]">
             Track and manage student applications through all stages
           </p>
@@ -123,7 +123,7 @@ export default function PipelinePage() {
           <StudentPipeline students={pipelineStudents} />
         )}
 
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-[20px] border border-[#E5E7EB] bg-white p-6 shadow-sm">
             <h3 className="text-sm font-semibold text-[#64748B]">Total in Pipeline</h3>
             <p className="mt-2 text-2xl font-bold text-[#0F172A]">{pipelineStudents.length}</p>

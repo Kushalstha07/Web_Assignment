@@ -15,7 +15,6 @@ export default function StudentsPage() {
 
   // Data states
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -27,12 +26,11 @@ export default function StudentsPage() {
       const response = await getUsers(1, 100, search || undefined);
       if (response.success) {
         setUsers(response.data);
-        setTotal(response.meta.total);
       } else {
         setError(response.message);
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch users");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to fetch users");
     } finally {
       setLoading(false);
     }
@@ -40,7 +38,8 @@ export default function StudentsPage() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      fetchUsers();
+      const timer = window.setTimeout(() => void fetchUsers(), 0);
+      return () => window.clearTimeout(timer);
     }
   }, [fetchUsers, authLoading, user]);
 
@@ -54,7 +53,7 @@ export default function StudentsPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-[#0F172A]">Students</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">Students</h1>
           <p className="mt-1 text-sm text-[#64748B]">Loading...</p>
         </div>
         <SkeletonTable rows={8} columns={7} />
@@ -77,11 +76,11 @@ export default function StudentsPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid gap-6 md:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-[20px] border border-[#E5E7EB] bg-white p-6 shadow-sm">
             <p className="text-sm font-medium text-[#64748B]">Total Students</p>
-            <p className="mt-2 text-2xl font-bold text-[#0F172A]">{total}</p>
-            <p className="mt-1 text-xs text-[#64748B]">Registered users</p>
+            <p className="mt-2 text-2xl font-bold text-[#0F172A]">{students.length}</p>
+            <p className="mt-1 text-xs text-[#64748B]">Student accounts loaded</p>
           </div>
           <div className="rounded-[20px] border border-[#E5E7EB] bg-white p-6 shadow-sm">
             <p className="text-sm font-medium text-[#64748B]">Active</p>
@@ -101,14 +100,14 @@ export default function StudentsPage() {
         </div>
 
         {/* Search */}
-        <div className="relative">
+        <div className="relative rounded-2xl border border-[#E7EDF6] bg-white p-4 shadow-sm">
           <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name or email..."
-            className="h-12 w-full max-w-md rounded-xl border border-[#E2E8F0] bg-white pl-11 pr-4 text-sm text-[#0F172A] outline-none transition placeholder:text-[#94A3B8] focus:border-[#1D4ED8] focus:ring-2 focus:ring-[#1D4ED8]/15"
+            className="h-12 w-full rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] pl-11 pr-4 text-sm text-[#0F172A] outline-none transition placeholder:text-[#94A3B8] focus:border-[#1D4ED8] focus:bg-white focus:ring-2 focus:ring-[#1D4ED8]/15 sm:max-w-lg"
           />
         </div>
 
@@ -134,7 +133,7 @@ export default function StudentsPage() {
         {/* Users Table */}
         {loading ? (
           <SkeletonTable rows={8} columns={7} />
-        ) : users.length === 0 ? (
+        ) : students.length === 0 ? (
           <div className="flex min-h-[300px] flex-col items-center justify-center rounded-2xl border border-dashed border-[#E2E8F0] bg-white">
             <Search className="h-12 w-12 text-[#94A3B8] mb-3" />
             <p className="text-sm font-medium text-[#64748B]">No users found</p>
@@ -150,7 +149,7 @@ export default function StudentsPage() {
         ) : (
           <div className="rounded-[20px] border border-[#E5E7EB] bg-white shadow-sm">
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="min-w-[900px] w-full">
                 <thead>
                   <tr className="border-b border-[#E5E7EB] bg-[#F8FAFC]">
                     <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#64748B]">Student</th>
@@ -162,7 +161,7 @@ export default function StudentsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E5E7EB]">
-                  {users.map((u) => (
+                  {students.map((u) => (
                     <tr key={u.id} className="transition-all hover:bg-[#F8FAFC]">
                       <td className="whitespace-nowrap px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -198,9 +197,9 @@ export default function StudentsPage() {
 
             {/* Pagination info */}
             <div className="border-t border-[#E5E7EB] px-6 py-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-[#64748B]">
-                  Showing {users.length} of {total} users
+                  Showing {students.length} student accounts
                 </p>
                 <div className="flex gap-2">
                   <a

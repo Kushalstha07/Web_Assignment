@@ -58,11 +58,11 @@ export default function CounsellorsPage() {
     finally { setSaving(false); }
   }
 
-  if (authLoading || loading) return <div className="grid gap-6 md:grid-cols-3">{[1,2,3].map((item) => <SkeletonCard key={item}/>)}</div>;
+  if (authLoading || loading) return <div className="grid gap-4 md:grid-cols-3">{[1,2,3].map((item) => <SkeletonCard key={item}/>)}</div>;
   if (!user) return null;
 
   return <div className="space-y-6">
-    <div><h1 className="text-3xl font-bold text-[#0F172A]">Counsellors</h1><p className="mt-1 text-sm text-[#64748B]">Find an adviser and book a real appointment.</p></div>
+    <div><h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">Counsellors</h1><p className="mt-1 text-sm text-[#64748B]">Find an adviser and book a real appointment.</p></div>
     {notice && <div className="rounded-xl bg-[#EEF5FF] p-3 text-sm text-[#1D4ED8]">{notice}</div>}
     <Card><div className="flex flex-col gap-3 md:flex-row"><div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]"/><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search counsellors" className="pl-10"/></div><select value={specialty} onChange={(event) => setSpecialty(event.target.value)} className="rounded-xl border px-4 text-sm"><option value="">All specialties</option>{specialties.map((item) => <option key={item} value={item}>{pretty(item)}</option>)}</select><label className="flex items-center gap-2 text-sm text-[#64748B]"><input type="checkbox" checked={availableOnly} onChange={(event) => setAvailableOnly(event.target.checked)}/>Available only</label></div></Card>
     <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">{filtered.map((item) => <Card key={item.id} className="flex flex-col">

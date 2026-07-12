@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Search, Sparkles, Bell, Plus, ChevronDown, User, Settings, HelpCircle, LogOut, CheckCheck, Trash2 } from "lucide-react";
+import { Search, Sparkles, Bell, Plus, ChevronDown, User, Settings, HelpCircle, LogOut, CheckCheck, Trash2, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { deleteNotification, getNotifications, getUnreadCount, markAllNotificationsAsRead, markNotificationsAsRead, type Notification } from "@/lib/api/notification.api";
@@ -28,7 +28,7 @@ const breadcrumbMap: Record<string, string> = {
   "/admin/users": "User Management",
 };
 
-export default function TopNav() {
+export default function TopNav({ onOpenSidebar }: { onOpenSidebar: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
@@ -49,7 +49,10 @@ export default function TopNav() {
     }
   }, [user]);
 
-  useEffect(() => { void refreshNotifications(); }, [refreshNotifications]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => void refreshNotifications(), 0);
+    return () => window.clearTimeout(timer);
+  }, [refreshNotifications]);
 
   const openNotifications = async () => {
     const next = !showNotifications;
@@ -97,17 +100,18 @@ export default function TopNav() {
   };
 
   return (
-    <header className="sticky top-0 z-40 h-16 border-b border-[#E5E7EB] bg-white/80 backdrop-blur-md">
-      <div className="flex h-full items-center justify-between px-6">
+    <header className="sticky top-0 z-30 h-16 border-b border-[#E7EDF6] bg-white/90 backdrop-blur-xl">
+      <div className="flex h-full items-center justify-between gap-3 px-4 sm:px-6">
         {/* Left: Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-[#64748B]">Home</span>
-          <span className="text-[#94A3B8]">/</span>
+        <div className="flex min-w-0 items-center gap-2 text-sm">
+          <button onClick={onOpenSidebar} aria-label="Open navigation" className="mr-1 rounded-xl p-2 text-[#64748B] hover:bg-[#F1F5F9] lg:hidden"><Menu className="h-5 w-5"/></button>
+          <span className="hidden text-[#64748B] sm:inline">Workspace</span>
+          <span className="hidden text-[#94A3B8] sm:inline">/</span>
           <span className="font-semibold text-[#0F172A]">{currentPage}</span>
         </div>
 
         {/* Center: Global Search */}
-        <div className="mx-8 hidden flex-1 max-w-xl md:block">
+        <div className="mx-4 hidden flex-1 max-w-xl xl:block">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
             <input
@@ -121,7 +125,7 @@ export default function TopNav() {
         {/* Right: Actions */}
         <div className="flex items-center gap-2">
           {/* AI Assistant Button - Highlighted */}
-          <button className="flex items-center gap-2 rounded-[12px] bg-gradient-to-r from-[#7C3AED] to-[#2563EB] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md">
+          <button onClick={() => router.push("/recommendations")} className="hidden items-center gap-2 rounded-[12px] bg-gradient-to-r from-[#7C3AED] to-[#2563EB] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md sm:flex">
             <Sparkles className="h-4 w-4" />
             <span className="hidden sm:inline">AI Assistant</span>
           </button>
@@ -137,7 +141,7 @@ export default function TopNav() {
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 rounded-[20px] border border-[#E5E7EB] bg-white p-4 shadow-lg">
+              <div className="fixed inset-x-3 top-16 mt-2 rounded-[20px] border border-[#E5E7EB] bg-white p-4 shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:w-96">
                 <div className="mb-3 flex items-center justify-between"><h3 className="text-sm font-bold text-[#0F172A]">Notifications</h3>{unreadCount > 0 && <button onClick={markAllRead} className="flex items-center gap-1 text-xs font-semibold text-[#2563EB]"><CheckCheck className="h-3.5 w-3.5"/>Mark all read</button>}</div>
                 <div className="max-h-96 space-y-2 overflow-y-auto">
                   {notificationsLoading && <p className="py-6 text-center text-sm text-[#64748B]">Loading…</p>}
@@ -154,7 +158,7 @@ export default function TopNav() {
           </div>
 
           {/* Quick Add */}
-          <button className="rounded-[12px] p-2 text-[#64748B] transition-all hover:bg-[#F8FAFC] hover:text-[#0F172A]">
+          <button onClick={() => router.push(user?.role === "admin" ? "/admin/users" : "/applications")} aria-label="Quick add" className="hidden rounded-[12px] p-2 text-[#64748B] transition-all hover:bg-[#F8FAFC] hover:text-[#0F172A] sm:block">
             <Plus className="h-5 w-5" />
           </button>
 
@@ -162,16 +166,16 @@ export default function TopNav() {
           <div className="relative">
             <button
               onClick={() => setShowProfile(!showProfile)}
-              className="flex items-center gap-2 rounded-[12px] p-1.5 pr-3 transition-all hover:bg-[#F8FAFC]"
+              className="flex items-center gap-2 rounded-[12px] p-1.5 transition-all hover:bg-[#F8FAFC] sm:pr-3"
             >
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#2563EB] to-[#7C3AED] text-sm font-bold text-white">
                 {initials}
               </div>
-              <ChevronDown className="h-4 w-4 text-[#64748B]" />
+              <ChevronDown className="hidden h-4 w-4 text-[#64748B] sm:block" />
             </button>
 
             {showProfile && (
-              <div className="absolute right-0 mt-2 w-56 rounded-[20px] border border-[#E5E7EB] bg-white p-2 shadow-lg">
+              <div className="absolute right-0 mt-2 w-64 rounded-[20px] border border-[#E5E7EB] bg-white p-2 shadow-xl">
                 <div className="mb-2 border-b border-[#E5E7EB] pb-2">
                   <p className="text-sm font-semibold text-[#0F172A]">{displayName}</p>
                   <p className="text-xs text-[#64748B]">{role}</p>

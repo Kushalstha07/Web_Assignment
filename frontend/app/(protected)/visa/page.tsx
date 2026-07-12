@@ -82,7 +82,7 @@ export default function VisaPage() {
           <p className="mt-1 text-sm text-[#64748B]">Track and manage student visa applications</p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-5">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           <Card padding="md">
             <p className="text-sm font-medium text-[#64748B]">Total</p>
             <p className="mt-2 text-2xl font-bold text-[#0F172A]">156</p>
@@ -131,7 +131,7 @@ export default function VisaPage() {
           </div>
         </Card>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {filteredApplications.map((app) => (
             <Card key={app.id} padding="md" className="hover:shadow-md transition-all">
               <div className="flex items-start justify-between mb-4">

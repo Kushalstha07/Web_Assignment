@@ -122,7 +122,7 @@ function AdminDashboard() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <SkeletonCard key={i} />
           ))}
@@ -136,14 +136,14 @@ function AdminDashboard() {
     <div className="space-y-6">
       {/* Welcome Header */}
       <div>
-        <h1 className="text-3xl font-bold text-[#0F172A]">Dashboard Overview</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">Dashboard Overview</h1>
         <p className="mt-1 text-sm text-[#64748B]">
           {error ? "Some data may not be available" : `Welcome back! ${userCount} users registered in the system.`}
         </p>
       </div>
 
       {/* KPI Cards Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {kpiData.map((kpi, idx) => (
           <KPICard key={idx} {...kpi} />
         ))}
@@ -172,7 +172,7 @@ function AdminDashboard() {
       )}
 
       {/* Recent Activity & Quick Actions Grid */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 xl:grid-cols-2">
         {/* Recent Users */}
         <div className="rounded-[20px] border border-[#E5E7EB] bg-white p-6 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
@@ -303,7 +303,7 @@ function StudentDashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card padding="md">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#EEF5FF]">
@@ -351,7 +351,7 @@ function StudentDashboard() {
       </div>
 
       {/* Main Grid */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 xl:grid-cols-3">
         {/* Applications */}
         <Card padding="md" className="lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
@@ -451,7 +451,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <SkeletonCard key={i} />
           ))}

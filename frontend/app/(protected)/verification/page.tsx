@@ -81,7 +81,7 @@ export default function VerificationPage() {
           <p className="mt-1 text-sm text-[#64748B]">Review and verify student documents</p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Card padding="md">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#EEF5FF]">
@@ -152,8 +152,8 @@ export default function VerificationPage() {
           </div>
         </Card>
 
-        <div className="overflow-hidden rounded-2xl border border-[#E8EEF7] bg-white">
-          <table className="w-full">
+        <div className="overflow-x-auto rounded-2xl border border-[#E8EEF7] bg-white shadow-sm">
+          <table className="min-w-[760px] w-full">
             <thead>
               <tr className="border-b border-[#E8EEF7] bg-[#F8FAFD]">
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#64748B]">Student</th>

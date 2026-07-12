@@ -38,22 +38,22 @@ export default function ReportsPage() {
   return (
     <AdminGuard>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-[#0F172A]">Reports</h1>
             <p className="mt-1 text-sm text-[#64748B]">Generate and download comprehensive analytics reports</p>
           </div>
-          <Button variant="primary" size="md">
+          <Button variant="primary" size="md" className="w-full sm:w-auto">
             <Download className="h-4 w-4" />
             Generate Report
           </Button>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {reports.map((report, idx) => {
             const Icon = report.icon;
             return (
-              <Card key={idx} padding="md" className="hover:shadow-lg transition-all group cursor-pointer">
+              <Card key={idx} padding="md" className="group cursor-pointer hover-elevate">
                 <div className="flex items-start gap-4">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#EEF5FF]">
                     <Icon className="h-6 w-6 text-[#2563EB]" />

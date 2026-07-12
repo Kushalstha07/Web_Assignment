@@ -6,7 +6,6 @@ import type { AdminUser, AdminCreateUserPayload, AdminUpdateUserPayload } from "
 const studyLevels = ["high-school", "diploma", "undergraduate", "postgraduate"] as const;
 const destinations = ["usa", "uk", "canada", "australia", "europe"] as const;
 const intakes = ["spring", "summer", "fall", "winter"] as const;
-const budgets = ["under-10k", "10k-20k", "20k-35k", "35k-plus"] as const;
 
 interface UserFormProps {
   user?: AdminUser | null;
@@ -70,7 +69,7 @@ export function UserForm({ user, onSave, onCancel, isSaving }: UserFormProps) {
         if (key === "password") {
           if (form.password) payload.password = form.password;
         } else if (form[key] !== user![key as keyof AdminUser] && form[key] !== "") {
-          (payload as any)[key] = form[key];
+          Object.assign(payload, { [key]: form[key] });
         }
       }
       await onSave(payload);
@@ -85,14 +84,15 @@ export function UserForm({ user, onSave, onCancel, isSaving }: UserFormProps) {
   const errorClass = "text-xs text-red-600 mt-1";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#0F172A]/55 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+      <div className="admin-scrollbar max-h-[94vh] w-full max-w-2xl overflow-y-auto rounded-t-[24px] bg-white p-4 shadow-2xl sm:max-h-[90vh] sm:rounded-[24px] sm:p-6">
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-lg font-bold text-[#0F172A]">
             {isEdit ? "Edit User" : "Create User"}
           </h2>
           <button
             onClick={onCancel}
+            aria-label="Close user form"
             className="rounded-lg p-1 text-[#64748B] hover:bg-[#F1F5F9]"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -103,7 +103,7 @@ export function UserForm({ user, onSave, onCancel, isSaving }: UserFormProps) {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
             {/* Full Name */}
             <div className="space-y-1">
               <label className={labelClass}>Full Name</label>
@@ -200,19 +200,19 @@ export function UserForm({ user, onSave, onCancel, isSaving }: UserFormProps) {
             </div>
           </div>
 
-          <div className="mt-6 flex justify-end gap-3">
+          <div className="sticky bottom-0 -mx-4 -mb-4 mt-6 flex flex-col-reverse gap-3 border-t border-[#E7EDF6] bg-white/95 px-4 py-4 backdrop-blur sm:static sm:mx-0 sm:mb-0 sm:flex-row sm:justify-end sm:border-0 sm:bg-transparent sm:p-0">
             <button
               type="button"
               onClick={onCancel}
               disabled={isSaving}
-              className="h-12 rounded-xl border border-[#E2E8F0] bg-white px-6 text-sm font-semibold text-[#64748B] transition-all hover:bg-[#F8FAFC] disabled:opacity-50"
+              className="h-12 w-full rounded-xl border border-[#E2E8F0] bg-white px-6 text-sm font-semibold text-[#64748B] transition-all hover:bg-[#F8FAFC] disabled:opacity-50 sm:w-auto"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSaving}
-              className="h-12 rounded-xl bg-[#1D4ED8] px-6 text-sm font-bold text-white shadow-lg shadow-[#1D4ED8]/20 transition-all hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-70"
+              className="h-12 w-full rounded-xl bg-[#1D4ED8] px-6 text-sm font-bold text-white shadow-lg shadow-[#1D4ED8]/20 transition-all hover:-translate-y-0.5 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
             >
               {isSaving ? "Saving..." : isEdit ? "Update User" : "Create User"}
             </button>

@@ -47,7 +47,7 @@ export default function RecommendationsPage() {
   if (!user) return null;
 
   return <div className="space-y-6">
-    <div className="flex items-start justify-between"><div><h1 className="text-3xl font-bold text-[#0F172A]">University Recommendations</h1><p className="mt-1 text-sm text-[#64748B]">Personalised using your profile, destinations, budget, GPA, and field of study.</p></div><div className="rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB] p-3 text-white"><Sparkles className="h-6 w-6"/></div></div>
+    <div className="flex items-start justify-between gap-4"><div><h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">University Recommendations</h1><p className="mt-1 text-sm text-[#64748B]">Personalised using your profile, destinations, budget, GPA, and field of study.</p></div><div className="shrink-0 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB] p-3 text-white shadow-lg shadow-purple-500/20"><Sparkles className="h-6 w-6"/></div></div>
     {!profile && <Card className="border-[#F59E0B]/40 bg-[#FFF9EE]"><p className="text-sm text-[#92400E]">Complete your academic profile to improve these matches. <Link href="/onboarding/step-1" className="font-semibold underline">Complete profile</Link></p></Card>}
     {error && <div className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</div>}
     <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">{matches.map((item) => <Card key={item.id} className="flex flex-col">
