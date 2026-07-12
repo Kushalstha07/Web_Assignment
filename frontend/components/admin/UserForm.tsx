@@ -29,7 +29,7 @@ export function UserForm({ user, onSave, onCancel, isSaving }: UserFormProps) {
     intake: user?.intake || "",
     budget: user?.budget || "",
     password: "",
-    role: user?.role || "user" as "admin" | "user",
+    role: user?.role || "student" as "admin" | "counsellor" | "student",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -186,7 +186,8 @@ export function UserForm({ user, onSave, onCancel, isSaving }: UserFormProps) {
             <div className="space-y-1">
               <label className={labelClass}>Role</label>
               <select name="role" value={form.role} onChange={handleChange} className={selectClass}>
-                <option value="user">User</option>
+                <option value="student">Student</option>
+                <option value="counsellor">Counsellor</option>
                 <option value="admin">Admin</option>
               </select>
             </div>

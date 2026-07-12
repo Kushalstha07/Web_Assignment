@@ -6,6 +6,7 @@
     "dev": "npx tsx --watch index.ts",
     "start": "node dist/index.js",
     "build": "tsc",
+    "seed": "tsx src/database/seed.ts",
     "test": "jest --verbose --detectOpenHandles"
   },
   "keywords": [
@@ -42,6 +43,7 @@
     "@types/node": "^25.9.4",
     "@types/supertest": "^7.2.0",
     "jest": "^30.4.2",
+    "mongodb-memory-server": "^11.2.0",
     "supertest": "^7.2.2",
     "ts-node": "^10.9.2",
     "tsx": "^4.22.4",

@@ -12,7 +12,7 @@ export const AdminCreateUserDTO = z.object({
   intake: z.enum(intakes),
   budget: z.enum(budgets),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  role: z.enum(["admin", "user"]).optional().default("user"),
+  role: z.enum(["admin", "counsellor", "student"]).optional().default("student"),
 });
 
 export type AdminCreateUserDTO = z.infer<typeof AdminCreateUserDTO>;
@@ -28,7 +28,7 @@ export const AdminUpdateUserDTO = z.object({
   intake: z.enum(intakes).optional(),
   budget: z.enum(budgets).optional(),
   password: z.string().min(6, "Password must be at least 6 characters").optional(),
-  role: z.enum(["admin", "user"]).optional(),
+  role: z.enum(["admin", "counsellor", "student"]).optional(),
 });
 
 export type AdminUpdateUserDTO = z.infer<typeof AdminUpdateUserDTO>;

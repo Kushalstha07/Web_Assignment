@@ -3,6 +3,15 @@ import cors from "cors";
 import path from "path";
 import userRoutes from "./routes/user.route";
 import adminRoutes from "./routes/admin.route";
+import academicProfileRoutes from "./routes/academic-profile.route";
+import universityRoutes from "./routes/university.route";
+import applicationRoutes from "./routes/application.route";
+import documentRoutes from "./routes/document.route";
+import counsellorRoutes from "./routes/counsellor.route";
+import appointmentRoutes from "./routes/appointment.route";
+import messageRoutes from "./routes/message.route";
+import scholarshipRoutes from "./routes/scholarship.route";
+import notificationRoutes from "./routes/notification.route";
 
 const app: Application = express();
 
@@ -29,6 +38,15 @@ app.get("/", (req: Request, res: Response) => {
 
 app.use("/api/v1/auth", userRoutes);
 app.use("/api/v1/admin", adminRoutes);
+app.use("/api/v1/academic-profile", academicProfileRoutes);
+app.use("/api/v1/universities", universityRoutes);
+app.use("/api/v1/applications", applicationRoutes);
+app.use("/api/v1/documents", documentRoutes);
+app.use("/api/v1/counsellors", counsellorRoutes);
+app.use("/api/v1/appointments", appointmentRoutes);
+app.use("/api/v1/messages", messageRoutes);
+app.use("/api/v1/scholarships", scholarshipRoutes);
+app.use("/api/v1/notifications", notificationRoutes);
 
 app.use((req: Request, res: Response) => {
   return res.status(404).json({
