@@ -16,10 +16,9 @@ export default function TestScoresCard({ scores }: TestScoresCardProps) {
           <span className="text-lg">📝</span>
           <h3 className="text-lg font-bold text-[#172B4D]">Test Scores</h3>
         </div>
-        <button className="text-sm font-semibold text-[#1565D8] hover:underline">+ Add Score</button>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {scores.map((item, index) => (
           <div key={index} className="rounded-xl border border-[#E8EEF7] bg-[#F8FAFD] p-4 text-center transition-all hover:border-[#1565D8] hover:shadow-md">
             <p className="text-sm font-semibold text-[#6B7280]">{item.test}</p>
@@ -30,6 +29,7 @@ export default function TestScoresCard({ scores }: TestScoresCardProps) {
           </div>
         ))}
       </div>
+      {scores.length === 0 && <p className="py-8 text-center text-sm text-[#6B7280]">No test scores have been recorded.</p>}
     </div>
   );
 }

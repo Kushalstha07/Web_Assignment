@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { updateProfile } from "@/lib/api/auth.api";
 import ProfileHeader from "@/components/profile/ProfileHeader";
@@ -9,6 +9,9 @@ import ReadinessCard from "@/components/profile/ReadinessCard";
 import EducationCard from "@/components/profile/EducationCard";
 import TestScoresCard from "@/components/profile/TestScoresCard";
 import DocumentVault from "@/components/profile/DocumentVault";
+import { getMyProfile } from "@/lib/api/academic-profile.api";
+import type { AcademicProfile } from "@/lib/schemas/academic-profile.schema";
+import { getMyDocuments, type Document } from "@/lib/api/document.api";
 
 export default function ProfilePage() {
   const { user, refreshUser } = useAuth();
@@ -21,45 +24,26 @@ export default function ProfilePage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [academicProfile, setAcademicProfile] = useState<AcademicProfile | null>(null);
+  const [uploadedDocuments, setUploadedDocuments] = useState<Document[]>([]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void Promise.all([getMyProfile(), getMyDocuments()]).then(([profileResult, documentResult]) => {
+        if (profileResult.success) setAcademicProfile(profileResult.data);
+        if (documentResult.success) setUploadedDocuments(documentResult.data || []);
+      });
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   if (!user) return null;
 
-  const completion = 85;
-
-  const education = [
-    {
-      degree: "Bachelor of Science",
-      institution: "Boston University",
-      year: "2018 - 2020",
-      scholarship: "Merit Scholarship",
-    },
-    {
-      degree: "Master of Science",
-      institution: "MIT",
-      year: "2020 - 2024",
-      scholarship: "Research Assistant",
-    },
-    {
-      degree: "PhD (Current)",
-      institution: "Stanford University",
-      year: "2024 - Present",
-    },
-  ];
-
-  const testScores = [
-    { test: "IELTS", score: "8.0", validUntil: "Dec 2025" },
-    { test: "GRE", score: "324", validUntil: "Oct 2026" },
-    { test: "SAT", score: "1450", validUntil: "N/A" },
-  ];
-
-  const documents = [
-    { name: "Passport.pdf", size: "1.2 MB", status: "Uploaded" },
-    { name: "IELTS.pdf", size: "890 KB", status: "Uploaded" },
-    { name: "Transcript.pdf", size: "2.4 MB", status: "Uploaded" },
-    { name: "Recommendation.pdf", size: "560 KB", status: "Uploaded" },
-  ];
-
-  const missingDocuments = ["Financial Statement", "SOP"];
+  const completion = academicProfile?.profileStrength ?? 0;
+  const education = academicProfile ? [{ degree: academicProfile.highestQualification, institution: academicProfile.institution, year: String(academicProfile.graduationYear) }] : [];
+  const testScores = academicProfile?.testType && academicProfile.testScore !== undefined ? [{ test: academicProfile.testType, score: String(academicProfile.testScore) }] : [];
+  const documents = uploadedDocuments.map((item) => ({ name: item.originalName, size: formatSize(item.size), status: item.status, url: item.url }));
+  const missingDocuments: string[] = [];
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -301,8 +285,8 @@ export default function ProfilePage() {
       />
 
       {/* Personal Info + Readiness */}
-      <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-2">
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
           <PersonalInfoCard user={user} />
         </div>
         <div>
@@ -311,7 +295,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Education + Test Scores */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid gap-6 lg:grid-cols-2">
         <EducationCard education={education} />
         <TestScoresCard scores={testScores} />
       </div>
@@ -320,4 +304,10 @@ export default function ProfilePage() {
       <DocumentVault documents={documents} />
     </div>
   );
+}
+
+function formatSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }

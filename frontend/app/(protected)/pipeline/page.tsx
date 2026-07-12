@@ -1,146 +1,65 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminGuard } from "@/components/auth/AdminGuard";
-import { getUsers } from "@/lib/api/admin.api";
-import type { AdminUser } from "@/lib/api/types";
-import { StudentPipeline } from "@/components/admin/StudentPipeline";
+import { StudentPipeline, type Student } from "@/components/admin/StudentPipeline";
+import { Card } from "@/components/ui/Card";
 import { SkeletonCard } from "@/components/ui/Skeleton";
-import type { Student } from "@/components/admin/StudentPipeline";
+import { useAuth } from "@/context/AuthContext";
+import { getUsers } from "@/lib/api/admin.api";
+import { getAllApplications, updateApplication, type Application } from "@/lib/api/application.api";
+import type { AdminUser } from "@/lib/api/types";
+import { getUniversities, type University } from "@/lib/api/university.api";
 
 export default function PipelinePage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-
+  const [applications, setApplications] = useState<Application[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [total, setTotal] = useState(0);
+  const [universities, setUniversities] = useState<University[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState("");
 
-  const fetchUsers = useCallback(async () => {
+  useEffect(() => { if (!authLoading && !user) router.push("/login"); }, [authLoading, user, router]);
+  const load = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
-      const response = await getUsers(1, 100);
-      if (response.success) {
-        setUsers(response.data);
-        setTotal(response.meta.total);
-      } else {
-        setError(response.message);
-      }
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch users");
-    } finally {
-      setLoading(false);
-    }
+      const [applicationResult, userResult, universityResult] = await Promise.all([getAllApplications(1, 100), getUsers(1, 100), getUniversities({ limit: 100 })]);
+      setApplications(applicationResult.data || []); setUsers(userResult.data || []); setUniversities(universityResult.data || []); setError("");
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to load pipeline"); }
+    finally { setLoading(false); }
   }, []);
+  useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);
 
-  useEffect(() => {
-    if (!authLoading && user) {
-      fetchUsers();
-    }
-  }, [fetchUsers, authLoading, user]);
+  const pipelineStudents = useMemo<Student[]>(() => {
+    const userMap = new Map(users.map((item) => [item.id, item]));
+    const universityMap = new Map(universities.map((item) => [item.id, item.name]));
+    return applications.map((application) => {
+      const student = userMap.get(application.studentId);
+      return { id: application.id, name: student?.fullName || "Unknown user", email: student?.email || "No email available", phone: student?.phoneNumber, university: universityMap.get(application.universityId) || "Unknown university", program: application.program, stage: application.stage };
+    });
+  }, [applications, users, universities]);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/login");
-    }
-  }, [user, authLoading, router]);
-
-  if (authLoading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">Student Pipeline</h1>
-          <p className="mt-1 text-sm text-[#64748B]">Loading...</p>
-        </div>
-        <SkeletonCard />
-      </div>
-    );
+  async function moveApplication(id: string, stage: string) {
+    try {
+      const response = await updateApplication(id, { stage });
+      if (!response.success) throw new Error(response.message);
+      setApplications((current) => current.map((item) => item.id === id ? response.data : item));
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to update application stage"); await load(); }
   }
 
-  if (!user) {
-    return null;
-  }
+  if (authLoading || loading) return <SkeletonCard/>;
+  if (!user) return null;
+  const active = applications.filter((item) => item.status !== "accepted" && item.status !== "rejected" && item.status !== "withdrawn").length;
+  const decisions = applications.filter((item) => item.stage === "decision-made").length;
 
-  // Map real users to pipeline students
-  const pipelineStudents: Student[] = users.map((u, idx) => {
-    const stages = ["Lead", "Consultation", "Application", "Offer Letter", "Visa", "Enrolled"] as const;
-    return {
-      id: u.id,
-      name: u.fullName,
-      email: u.email,
-      phone: u.phoneNumber,
-      university: `${u.destination.charAt(0).toUpperCase() + u.destination.slice(1)} - ${u.fieldOfStudy}`,
-      program: u.studyLevel.replace("-", " ").replace(/\b\w/g, (c) => c.toUpperCase()),
-      stage: stages[idx % stages.length],
-    };
-  });
-
-  return (
-    <AdminGuard>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">Student Pipeline</h1>
-          <p className="mt-1 text-sm text-[#64748B]">
-            Track and manage student applications through all stages
-          </p>
-        </div>
-
-        {/* Error State */}
-        {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4">
-            <div className="flex items-center gap-3">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-              <div>
-                <p className="text-sm font-medium text-red-800">{error}</p>
-                <button onClick={fetchUsers} className="text-sm text-red-600 underline hover:text-red-800">
-                  Try again
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {loading ? (
-          <SkeletonCard />
-        ) : pipelineStudents.length === 0 ? (
-          <div className="flex min-h-[300px] flex-col items-center justify-center rounded-2xl border border-dashed border-[#E2E8F0] bg-white">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-            </svg>
-            <p className="mt-4 text-sm font-medium text-[#64748B]">No students in pipeline</p>
-            <p className="text-xs text-[#94A3B8] mt-1">Create users to see them in the pipeline</p>
-          </div>
-        ) : (
-          <StudentPipeline students={pipelineStudents} />
-        )}
-
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="rounded-[20px] border border-[#E5E7EB] bg-white p-6 shadow-sm">
-            <h3 className="text-sm font-semibold text-[#64748B]">Total in Pipeline</h3>
-            <p className="mt-2 text-2xl font-bold text-[#0F172A]">{pipelineStudents.length}</p>
-            <p className="mt-1 text-xs text-[#64748B]">Active students in system</p>
-          </div>
-          <div className="rounded-[20px] border border-[#E5E7EB] bg-white p-6 shadow-sm">
-            <h3 className="text-sm font-semibold text-[#64748B]">Total Users</h3>
-            <p className="mt-2 text-2xl font-bold text-[#0F172A]">{total}</p>
-            <p className="mt-1 text-xs text-[#64748B]">Registered users</p>
-          </div>
-          <div className="rounded-[20px] border border-[#E5E7EB] bg-white p-6 shadow-sm">
-            <h3 className="text-sm font-semibold text-[#64748B]">Admins</h3>
-            <p className="mt-2 text-2xl font-bold text-[#0F172A]">{users.filter(u => u.role === "admin").length}</p>
-            <p className="mt-1 text-xs text-[#64748B]">Admin accounts</p>
-          </div>
-        </div>
-      </div>
-    </AdminGuard>
-  );
+  return <AdminGuard><div className="space-y-6">
+    <div><h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">Application Pipeline</h1><p className="mt-1 text-sm text-[#64748B]">Every card and stage comes directly from application records.</p></div>
+    {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+    <div className="grid gap-4 sm:grid-cols-3"><Metric label="Applications" value={applications.length}/><Metric label="Active cases" value={active}/><Metric label="Decisions made" value={decisions}/></div>
+    {pipelineStudents.length ? <StudentPipeline students={pipelineStudents} onStageChange={moveApplication}/> : <Card className="flex min-h-72 items-center justify-center"><p className="text-sm text-[#64748B]">No application records are available for the pipeline.</p></Card>}
+  </div></AdminGuard>;
 }
+
+function Metric({ label, value }: { label: string; value: number }) { return <Card><p className="text-sm text-[#64748B]">{label}</p><p className="mt-2 text-2xl font-bold text-[#0F172A]">{value}</p></Card>; }

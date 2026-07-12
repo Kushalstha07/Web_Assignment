@@ -26,18 +26,7 @@ export default function ReadinessCard({ completion, missingItems }: ReadinessCar
       </div>
 
       <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-          <span className="text-sm text-[#172B4D]">Personal Information</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-          <span className="text-sm text-[#172B4D]">Academic History</span>
-        </div>
+        <p className="text-sm text-[#6B7280]">Profile strength reported by the academic-profile service.</p>
         {missingItems.length > 0 && (
           <div className="flex items-center gap-2">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
