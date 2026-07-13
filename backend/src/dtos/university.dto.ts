@@ -29,6 +29,10 @@ export const UniversityFilterDTO = z.object({
   limit: z.coerce.number().int().positive().max(50).default(10),
 });
 
+export const RecommendationQueryDTO = z.object({
+  limit: z.coerce.number().int().positive().max(20).default(9),
+});
+
 export type CreateUniversityDTOType = z.infer<typeof CreateUniversityDTO>;
 export type UpdateUniversityDTOType = z.infer<typeof UpdateUniversityDTO>;
 export type UniversityFilterDTOType = z.infer<typeof UniversityFilterDTO>;

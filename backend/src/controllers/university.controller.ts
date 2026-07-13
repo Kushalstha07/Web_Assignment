@@ -1,12 +1,27 @@
 import { Request, Response } from "express";
 import { ApiResponseHelper } from "../uttils/apihelper.util";
 import { UniversityService } from "../services/university.service";
-import { CreateUniversityDTO, UpdateUniversityDTO, UniversityFilterDTO, CreateUniversityDTOType, UpdateUniversityDTOType, UniversityFilterDTOType } from "../dtos/university.dto";
+import { CreateUniversityDTO, UpdateUniversityDTO, UniversityFilterDTO, RecommendationQueryDTO } from "../dtos/university.dto";
 import { HttpException } from "../exceptions/http-exception";
 
 const universityService = new UniversityService();
 
 export class UniversityController {
+  async getRecommendations(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) return ApiResponseHelper.error(res, "Unauthorized", 401);
+      const parsed = RecommendationQueryDTO.safeParse(req.query);
+      if (!parsed.success) return ApiResponseHelper.error(res, parsed.error.message, 400);
+      const recommendations = await universityService.getRecommendations(userId, parsed.data.limit);
+      return ApiResponseHelper.success(res, recommendations, "Recommendations generated");
+    } catch (error) {
+      if (error instanceof HttpException) return ApiResponseHelper.error(res, error.message, error.status);
+      const message = error instanceof Error ? error.message : "Something went wrong";
+      return ApiResponseHelper.error(res, message, 500);
+    }
+  }
+
   async create(req: Request, res: Response) {
     try {
       const userId = req.user?.id;

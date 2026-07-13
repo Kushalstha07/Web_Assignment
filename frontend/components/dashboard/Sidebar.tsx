@@ -20,7 +20,6 @@ const adminGroups: NavGroup[] = [
     { href: "/applications", label: "Applications", icon: FileText },
     { href: "/universities", label: "Universities", icon: Building2 },
     { href: "/scholarships", label: "Scholarships", icon: Award },
-    { href: "/recommendations", label: "AI Recommendations", icon: Sparkles },
   ]},
   { label: "Workflow", items: [
     { href: "/verification", label: "Document Verification", icon: FileCheck },
@@ -43,6 +42,7 @@ const studentGroups: NavGroup[] = [
     { href: "/applications", label: "My Applications", icon: FileText },
     { href: "/universities", label: "Universities", icon: Building2 },
     { href: "/scholarships", label: "Scholarships", icon: Award },
+    { href: "/recommendations", label: "Recommendations", icon: Sparkles },
   ]},
   { label: "Services", items: [
     { href: "/appointments", label: "Book Appointment", icon: Calendar },

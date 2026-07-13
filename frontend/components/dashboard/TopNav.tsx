@@ -13,7 +13,7 @@ const breadcrumbMap: Record<string, string> = {
   "/applications": "Applications",
   "/universities": "Universities",
   "/scholarships": "Scholarships",
-  "/recommendations": "AI Recommendations",
+  "/recommendations": "Recommendations",
   "/verification": "Document Verification",
   "/pipeline": "Student Pipeline",
   "/analytics": "Analytics",
@@ -151,11 +151,10 @@ export default function TopNav({ onOpenSidebar }: { onOpenSidebar: () => void })
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2">
-          {/* AI Assistant Button - Highlighted */}
-          <button onClick={() => router.push("/recommendations")} className="hidden items-center gap-2 rounded-[12px] bg-gradient-to-r from-[#7C3AED] to-[#2563EB] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md sm:flex">
+          {user?.role === "student" && <button onClick={() => router.push("/recommendations")} className="hidden items-center gap-2 rounded-[12px] bg-gradient-to-r from-[#7C3AED] to-[#2563EB] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md sm:flex">
             <Sparkles className="h-4 w-4" />
-            <span className="hidden sm:inline">AI Assistant</span>
-          </button>
+            <span className="hidden sm:inline">My Matches</span>
+          </button>}
 
           {/* Notifications */}
           <div className="relative">
