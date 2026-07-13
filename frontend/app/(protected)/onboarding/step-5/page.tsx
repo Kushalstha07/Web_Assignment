@@ -26,9 +26,9 @@ export default function Step5Page() {
             </svg>
           </div>
 
-          <h2 className="text-2xl font-bold text-[#0F172A]">You're all set!</h2>
+          <h2 className="text-2xl font-bold text-[#0F172A]">You&apos;re all set!</h2>
           <p className="mt-2 text-sm text-[#64748B]">
-            Your profile is complete. You'll be redirected to your dashboard shortly.
+            Your profile is complete. You&apos;ll be redirected to your dashboard shortly.
           </p>
 
           <div className="mx-auto mt-8 max-w-xs">

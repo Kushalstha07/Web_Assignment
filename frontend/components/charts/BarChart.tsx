@@ -1,6 +1,6 @@
 "use client";
 
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, type TooltipContentProps } from "recharts";
 
 export interface BarChartData {
   name: string;
@@ -17,7 +17,7 @@ interface BarChartProps {
   barSize?: number;
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label }: Partial<TooltipContentProps<number, string>>) => {
   if (active && payload && payload.length) {
     return (
       <div className="rounded-lg border border-[#E5E7EB] bg-white p-3 shadow-lg">

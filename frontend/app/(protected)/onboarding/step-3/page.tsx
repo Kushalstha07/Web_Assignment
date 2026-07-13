@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
 import { saveStep3 } from "@/lib/api/academic-profile.api";
 import { Step3PreferencesSchema } from "@/lib/schemas/academic-profile.schema";

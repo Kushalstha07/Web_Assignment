@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getUniversityById, getUniversities } from "@/lib/api/university.api";
@@ -13,8 +13,6 @@ import {
   ArrowLeft,
   Plus,
   X,
-  CheckCircle2,
-  XCircle,
   TrendingUp,
   GraduationCap,
   DollarSign,
@@ -22,15 +20,24 @@ import {
   MapPin,
   Sparkles,
   BarChart3,
+  type LucideIcon,
 } from "lucide-react";
 
-const COMPARISON_METRICS = [
-  { key: "worldRanking", label: "World Ranking", icon: BarChart3 },
-  { key: "tuitionFee", label: "Tuition (Annual)", icon: DollarSign, format: (v: number) => `$${v.toLocaleString()}` },
-  { key: "rating", label: "Rating", icon: Star, format: (v: number) => `${v.toFixed(1)} / 5.0` },
-  { key: "matchScore", label: "Match Score", icon: TrendingUp, format: (v: number) => `${v}%`, highlight: true },
-  { key: "programs", label: "Programs Available", icon: GraduationCap, format: (v: string[]) => `${v.length} programs` },
-  { key: "city", label: "Location", icon: MapPin },
+interface ComparisonMetric {
+  key: string;
+  label: string;
+  icon: LucideIcon;
+  value: (university: University) => string | number;
+  numeric?: (university: University) => number | undefined;
+}
+
+const COMPARISON_METRICS: ComparisonMetric[] = [
+  { key: "worldRanking", label: "World Ranking", icon: BarChart3, value: (university: University) => university.worldRanking ?? "—", numeric: (university: University) => university.worldRanking },
+  { key: "tuitionFee", label: "Tuition (Annual)", icon: DollarSign, value: (university: University) => `$${university.tuitionFee.toLocaleString()}`, numeric: (university: University) => university.tuitionFee },
+  { key: "rating", label: "Rating", icon: Star, value: (university: University) => university.rating == null ? "—" : `${university.rating.toFixed(1)} / 5.0`, numeric: (university: University) => university.rating },
+  { key: "matchScore", label: "Match Score", icon: TrendingUp, value: (university: University) => university.matchScore == null ? "—" : `${university.matchScore}%`, numeric: (university: University) => university.matchScore },
+  { key: "programs", label: "Programs Available", icon: GraduationCap, value: (university: University) => `${university.programs.length} programs` },
+  { key: "city", label: "Location", icon: MapPin, value: (university: University) => university.city },
 ];
 
 export default function ComparePage() {
@@ -235,16 +242,14 @@ export default function ComparePage() {
               {/* Metric Rows */}
               {COMPARISON_METRICS.map((metric) => {
                 const Icon = metric.icon;
-                const values = universities.map((uni) => {
-                  const val = (uni as any)[metric.key];
-                  if (metric.format) return metric.format(val);
-                  return val ?? "—";
-                });
+                const values = universities.map(metric.value);
 
                 // Find best value for highlighting
-                const numericValues = values
-                  .map((v, i) => ({ val: (universities[i] as any)[metric.key], idx: i }))
-                  .filter((v) => typeof v.val === "number" && !isNaN(v.val));
+                const numericValues = metric.numeric
+                  ? universities
+                      .map((university, idx) => ({ val: metric.numeric?.(university), idx }))
+                      .filter((item): item is { val: number; idx: number } => typeof item.val === "number" && !Number.isNaN(item.val))
+                  : [];
 
                 const bestIdx =
                   numericValues.length > 0

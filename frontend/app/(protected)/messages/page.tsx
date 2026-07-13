@@ -38,15 +38,22 @@ export default function MessagesPage() {
     } finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { if (user) void loadConversations(); }, [user, loadConversations]);
   useEffect(() => {
-    if (!selectedId) { setMessages([]); return; }
-    void getMessages(selectedId).then((response) => {
-      const next = response.data || [];
-      setMessages(next);
-      const unread = next.filter((message) => message.senderId !== user?.id && message.status !== "read").map((message) => message.id);
-      if (unread.length) void markMessagesAsRead(unread);
-    }).catch((cause) => setError(cause instanceof Error ? cause.message : "Unable to load messages"));
+    if (!user) return;
+    const timer = window.setTimeout(() => void loadConversations(), 0);
+    return () => window.clearTimeout(timer);
+  }, [user, loadConversations]);
+  useEffect(() => {
+    if (!selectedId) return;
+    const timer = window.setTimeout(() => {
+      void getMessages(selectedId).then((response) => {
+        const next = response.data || [];
+        setMessages(next);
+        const unread = next.filter((message) => message.senderId !== user?.id && message.status !== "read").map((message) => message.id);
+        if (unread.length) void markMessagesAsRead(unread);
+      }).catch((cause) => setError(cause instanceof Error ? cause.message : "Unable to load messages"));
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [selectedId, user?.id]);
 
   const filtered = useMemo(() => conversations.filter((conversation) => (conversation.title || conversation.lastMessage || "Conversation").toLowerCase().includes(query.toLowerCase())), [conversations, query]);

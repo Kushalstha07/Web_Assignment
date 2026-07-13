@@ -61,7 +61,7 @@ export default function ContactPage() {
           tag="📬 Get in Touch"
           heading={
             <>
-              Let's Discuss Your{" "}
+              Let&apos;s Discuss Your{" "}
               <span className="text-blue-600">Study Abroad Goals</span>
             </>
           }
@@ -94,7 +94,7 @@ export default function ContactPage() {
                   Get in Touch
                 </h2>
                 <p className="mt-4 max-w-2xl text-lg leading-relaxed text-slate-500">
-                  Fill out the form below and we'll get back to you
+                  Fill out the form below and we&apos;ll get back to you
                   within 24 hours.
                 </p>
                 <div className="mt-8">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import { updateProfile } from "@/lib/api/auth.api";
 import ProfileHeader from "@/components/profile/ProfileHeader";
@@ -101,9 +102,9 @@ export default function ProfilePage() {
               <div className="mt-2 flex items-center gap-4">
                 <div className="relative h-20 w-20 overflow-hidden rounded-full border-2 border-[#E8EEF7] bg-slate-100">
                   {previewUrl ? (
-                    <img src={previewUrl} alt="Preview" className="h-full w-full object-cover" />
+                    <Image src={previewUrl} alt="Preview" fill sizes="80px" unoptimized className="object-cover" />
                   ) : user.profileImage ? (
-                    <img src={user.profileImage} alt={user.fullName} className="h-full w-full object-cover" />
+                    <Image src={user.profileImage} alt={user.fullName} fill sizes="80px" unoptimized className="object-cover" />
                   ) : (
                     <div className="flex h-full items-center justify-center text-2xl font-semibold text-slate-400">
                       {user.fullName.charAt(0).toUpperCase()}

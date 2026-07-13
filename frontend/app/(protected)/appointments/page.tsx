@@ -43,7 +43,10 @@ export default function AppointmentsPage() {
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to load appointments"); }
     finally { setLoading(false); }
   }, [user]);
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  }, [load]);
 
   const names = useMemo(() => new Map(counsellors.map((item) => [item.id, item.fullName])), [counsellors]);
   const filtered = useMemo(() => appointments.filter((item) => !status || item.status === status), [appointments, status]);

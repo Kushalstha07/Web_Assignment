@@ -8,7 +8,6 @@ import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { saveStep1 } from "@/lib/api/academic-profile.api";
 import { Step1PersonalSchema } from "@/lib/schemas/academic-profile.schema";
-import type { Step1Personal } from "@/lib/schemas/academic-profile.schema";
 import type { z } from "zod";
 
 type FormData = z.infer<typeof Step1PersonalSchema>;

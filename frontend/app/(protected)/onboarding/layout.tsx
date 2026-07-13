@@ -77,7 +77,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
         {/* Header */}
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-[#0F172A]">Complete Your Profile</h1>
-          <p className="mt-2 text-sm text-[#64748B]">Let's get you set up for success</p>
+          <p className="mt-2 text-sm text-[#64748B]">Let&apos;s get you set up for success</p>
         </div>
 
         {/* Stepper */}

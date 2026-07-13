@@ -6,21 +6,18 @@ import { useRouter, useParams } from "next/navigation";
 import { getUniversityById } from "@/lib/api/university.api";
 import type { University } from "@/lib/api/university.api";
 import { Button } from "@/components/ui/Button";
-import { Card, CardContent } from "@/components/ui/Card";
+import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import {
   ArrowLeft,
-  MapPin,
   DollarSign,
   Star,
-  GraduationCap,
   TrendingUp,
   Globe,
   Award,
   Calendar,
   BookOpen,
-  CheckCircle2,
   ExternalLink,
   Share2,
   Heart,
@@ -73,15 +70,17 @@ export default function UniversityDetailPage() {
       } else {
         setError("University not found");
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to load university details");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to load university details");
     } finally {
       setLoading(false);
     }
   }, [id]);
 
   useEffect(() => {
-    if (id) fetchUniversity();
+    if (!id) return;
+    const timer = window.setTimeout(() => void fetchUniversity(), 0);
+    return () => window.clearTimeout(timer);
   }, [id, fetchUniversity]);
 
   if (authLoading) {
@@ -130,7 +129,7 @@ export default function UniversityDetailPage() {
             {error || "University not found"}
           </h3>
           <p className="mt-1 text-sm text-[#64748B]">
-            The university you're looking for doesn't exist or has been removed.
+            The university you&apos;re looking for doesn&apos;t exist or has been removed.
           </p>
           <Button className="mt-4" onClick={() => router.push("/universities")}>
             Browse Universities

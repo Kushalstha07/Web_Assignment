@@ -166,7 +166,7 @@ export default function Features() {
             Global Success
           </h2>
           <p className="mt-4 text-lg leading-relaxed text-slate-500">
-            We've built a suite of AI-powered tools designed to take the
+            We&apos;ve built a suite of AI-powered tools designed to take the
             guesswork out of your university search and application process.
           </p>
         </div>

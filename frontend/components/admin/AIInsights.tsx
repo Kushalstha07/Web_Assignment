@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Sparkles, TrendingUp, AlertTriangle, Users, FileText } from "lucide-react";
+import { Sparkles, FileText } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 export interface Insight {

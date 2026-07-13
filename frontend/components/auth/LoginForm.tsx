@@ -225,7 +225,7 @@ export function LoginForm({
 
       {/* Registration Link */}
       <p className="mt-5 text-center text-xs text-[#64748B]">
-        Don't have an account?{" "}
+        Don&apos;t have an account?{" "}
         <Link
           href="/register"
           className="font-semibold text-[#1D4ED8] hover:underline"

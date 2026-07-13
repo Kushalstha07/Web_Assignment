@@ -40,7 +40,11 @@ export default function CounsellorsPage() {
     setCounsellors(response.data || []);
     setLoading(false);
   }, [availableOnly, specialty]);
-  useEffect(() => { if (user) void load(); }, [user, load]);
+  useEffect(() => {
+    if (!user) return;
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  }, [user, load]);
 
   const filtered = useMemo(() => counsellors.filter((item) => `${item.fullName} ${item.email} ${item.specialties.join(" ")}`.toLowerCase().includes(query.toLowerCase())), [counsellors, query]);
 
