@@ -22,6 +22,7 @@ export const applicationStages = [
 
 export const ApplicationSchema = z.object({
   studentId: z.string().min(1, "Student ID is required"),
+  counsellorId: z.string().nullable().optional(),
   universityId: z.string().min(1, "University ID is required"),
   program: z.string().min(1, "Program name is required"),
   status: z.enum(applicationStatuses).default("draft"),

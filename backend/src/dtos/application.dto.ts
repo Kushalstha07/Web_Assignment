@@ -8,6 +8,7 @@ export const CreateApplicationDTO = z.object({
 });
 
 export const UpdateApplicationDTO = z.object({
+  counsellorId: z.string().nullable().optional(),
   status: z.enum(applicationStatuses).optional(),
   stage: z.enum(applicationStages).optional(),
   program: z.string().min(1).optional(),
@@ -22,6 +23,12 @@ export const StudentUpdateApplicationDTO = UpdateApplicationDTO.pick({
   documents: true,
 }).strict();
 
+export const CounsellorUpdateApplicationDTO = UpdateApplicationDTO.pick({
+  status: true,
+  stage: true,
+  notes: true,
+}).strict();
+
 export const SubmitApplicationDTO = z.object({
   submittedDate: z.string().min(1, "Submission date is required"),
 });
@@ -29,4 +36,5 @@ export const SubmitApplicationDTO = z.object({
 export type CreateApplicationDTOType = z.infer<typeof CreateApplicationDTO>;
 export type UpdateApplicationDTOType = z.infer<typeof UpdateApplicationDTO>;
 export type StudentUpdateApplicationDTOType = z.infer<typeof StudentUpdateApplicationDTO>;
+export type CounsellorUpdateApplicationDTOType = z.infer<typeof CounsellorUpdateApplicationDTO>;
 export type SubmitApplicationDTOType = z.infer<typeof SubmitApplicationDTO>;

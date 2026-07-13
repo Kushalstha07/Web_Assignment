@@ -3,6 +3,8 @@ import { apiClient } from "./client";
 export interface Application {
   id: string;
   studentId: string;
+  studentName?: string;
+  counsellorId?: string | null;
   universityId: string;
   program: string;
   status: string;
@@ -39,6 +41,7 @@ export interface UpdateApplicationData {
   program?: string;
   notes?: string;
   documents?: string[];
+  counsellorId?: string | null;
 }
 
 export async function createApplication(data: CreateApplicationData): Promise<{ success: boolean; data: Application; message: string }> {
@@ -53,6 +56,10 @@ export async function getAllApplications(page = 1, limit = 10, search?: string):
   const params: Record<string, string> = { page: String(page), limit: String(limit) };
   if (search) params.search = search;
   return apiClient("GET", "/api/v1/applications/all", { params });
+}
+
+export async function getAssignedApplications(): Promise<ApplicationListResponse> {
+  return apiClient("GET", "/api/v1/applications/assigned");
 }
 
 export async function getApplicationById(id: string): Promise<{ success: boolean; data: Application }> {

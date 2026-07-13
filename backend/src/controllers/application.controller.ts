@@ -3,6 +3,7 @@ import { ApiResponseHelper } from "../uttils/apihelper.util";
 import { applicationService } from "../services/application.service";
 import {
   CreateApplicationDTO,
+  CounsellorUpdateApplicationDTO,
   StudentUpdateApplicationDTO,
   SubmitApplicationDTO,
   UpdateApplicationDTO,
@@ -77,13 +78,33 @@ export class ApplicationController {
     }
   }
 
+  async getAssigned(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) return ApiResponseHelper.error(res, "Unauthorized", 401);
+      const apps = await applicationService.getAssignedApplications(userId);
+      return ApiResponseHelper.success(res, apps, "Assigned applications fetched");
+    } catch (error) {
+      if (error instanceof HttpException) {
+        return ApiResponseHelper.error(res, error.message, error.status);
+      }
+      const message = error instanceof Error ? error.message : "Something went wrong";
+      return ApiResponseHelper.error(res, message, 500);
+    }
+  }
+
   async update(req: Request, res: Response) {
     try {
       const userId = req.user?.id;
       const role = req.user?.role || "student";
       if (!userId) return ApiResponseHelper.error(res, "Unauthorized", 401);
 
-      const updateSchema = role === "admin" ? UpdateApplicationDTO : StudentUpdateApplicationDTO;
+      const updateSchema =
+        role === "admin"
+          ? UpdateApplicationDTO
+          : role === "counsellor"
+            ? CounsellorUpdateApplicationDTO
+            : StudentUpdateApplicationDTO;
       const parsed = updateSchema.safeParse(req.body);
       if (!parsed.success) {
         const errors = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join(", ");

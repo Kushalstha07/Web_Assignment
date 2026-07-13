@@ -6,6 +6,7 @@ export interface IApplicationRepository {
   create(data: ApplicationType): Promise<IApplication>;
   getById(id: string): Promise<IApplication | null>;
   getByStudentId(studentId: string): Promise<IApplication[]>;
+  getByCounsellorId(counsellorId: string): Promise<IApplication[]>;
   getByUniversityId(universityId: string): Promise<IApplication[]>;
   getByStatus(status: string): Promise<IApplication[]>;
   getAll(): Promise<IApplication[]>;
@@ -28,6 +29,11 @@ export class ApplicationMongoRepository implements IApplicationRepository {
   async getByStudentId(studentId: string): Promise<IApplication[]> {
     const apps = await ApplicationModel.find({ studentId }).sort({ createdAt: -1 });
     return apps.map((a) => a.toObject() as IApplication);
+  }
+
+  async getByCounsellorId(counsellorId: string): Promise<IApplication[]> {
+    const apps = await ApplicationModel.find({ counsellorId }).sort({ updatedAt: -1 });
+    return apps.map((application) => application.toObject() as IApplication);
   }
 
   async getByUniversityId(universityId: string): Promise<IApplication[]> {

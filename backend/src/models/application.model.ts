@@ -14,6 +14,11 @@ const ApplicationMongoSchema: Schema<IApplication> = new Schema(
       required: true,
       ref: "User",
     },
+    counsellorId: {
+      type: String,
+      ref: "Counsellor",
+      default: null,
+    },
     universityId: {
       type: String,
       required: true,
@@ -58,6 +63,7 @@ const ApplicationMongoSchema: Schema<IApplication> = new Schema(
 );
 
 ApplicationMongoSchema.index({ studentId: 1 });
+ApplicationMongoSchema.index({ counsellorId: 1 });
 ApplicationMongoSchema.index({ universityId: 1 });
 ApplicationMongoSchema.index({ status: 1 });
 

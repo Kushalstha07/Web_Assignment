@@ -3,12 +3,17 @@ import { ApplicationType, applicationStatuses } from "../types/application.type"
 import { CreateApplicationDTOType, UpdateApplicationDTOType, SubmitApplicationDTOType } from "../dtos/application.dto";
 import { HttpException } from "../exceptions/http-exception";
 import { IApplication } from "../models/application.model";
+import { CounsellorMongoRepository } from "../repositories/counsellor.repository";
+import { UserModel } from "../models/user.model";
 
 const appRepo = new ApplicationMongoRepository();
+const counsellorRepo = new CounsellorMongoRepository();
 
 export type SafeApplication = {
   id: string;
   studentId: string;
+  studentName?: string;
+  counsellorId?: string | null;
   universityId: string;
   program: string;
   status: string;
@@ -21,11 +26,13 @@ export type SafeApplication = {
   updatedAt: string;
 };
 
-function toSafeApplication(a: IApplication): SafeApplication {
+function toSafeApplication(a: IApplication, studentName?: string): SafeApplication {
   const doc = a as IApplication & { createdAt?: Date; updatedAt?: Date };
   return {
     id: a._id.toString(),
     studentId: a.studentId,
+    studentName,
+    counsellorId: a.counsellorId || null,
     universityId: a.universityId,
     program: a.program,
     status: a.status,
@@ -40,6 +47,20 @@ function toSafeApplication(a: IApplication): SafeApplication {
 }
 
 export class ApplicationService {
+  private async canAccess(
+    application: IApplication,
+    userId: string,
+    role: string,
+  ): Promise<boolean> {
+    if (role === "admin") return true;
+    if (role === "student") return application.studentId === userId;
+    if (role === "counsellor") {
+      const counsellor = await counsellorRepo.getByUserId(userId);
+      return counsellor?._id.toString() === application.counsellorId;
+    }
+    return false;
+  }
+
   async create(data: CreateApplicationDTOType, studentId: string): Promise<SafeApplication> {
     const appData: ApplicationType = {
       studentId,
@@ -57,7 +78,7 @@ export class ApplicationService {
   async getById(id: string, userId: string, role: string): Promise<SafeApplication> {
     const app = await appRepo.getById(id);
     if (!app) throw new HttpException(404, "Application not found");
-    if (role !== "admin" && app.studentId !== userId) {
+    if (!(await this.canAccess(app, userId, role))) {
       throw new HttpException(403, "You can only access your own applications");
     }
     return toSafeApplication(app);
@@ -65,19 +86,40 @@ export class ApplicationService {
 
   async getMyApplications(studentId: string): Promise<SafeApplication[]> {
     const apps = await appRepo.getByStudentId(studentId);
-    return apps.map(toSafeApplication);
+    return apps.map((application) => toSafeApplication(application));
+  }
+
+  async getAssignedApplications(userId: string): Promise<SafeApplication[]> {
+    const counsellor = await counsellorRepo.getByUserId(userId);
+    if (!counsellor) throw new HttpException(404, "Counsellor profile not found");
+    const apps = await appRepo.getByCounsellorId(counsellor._id.toString());
+    const studentIds = [...new Set(apps.map((application) => application.studentId))];
+    const students = await UserModel.find({ _id: { $in: studentIds } })
+      .select("fullName")
+      .lean();
+    const names = new Map(students.map((student) => [student._id.toString(), student.fullName]));
+    return apps.map((application) =>
+      toSafeApplication(application, names.get(application.studentId)),
+    );
   }
 
   async getAll(page: number, limit: number, search?: string): Promise<{ data: SafeApplication[]; total: number }> {
     const result = await appRepo.getAllPaginated(page, limit, search);
-    return { data: result.data.map(toSafeApplication), total: result.total };
+    return {
+      data: result.data.map((application) => toSafeApplication(application)),
+      total: result.total,
+    };
   }
 
   async update(id: string, data: UpdateApplicationDTOType, userId: string, role: string): Promise<SafeApplication> {
     const app = await appRepo.getById(id);
     if (!app) throw new HttpException(404, "Application not found");
-    if (role !== "admin" && app.studentId !== userId) {
+    if (!(await this.canAccess(app, userId, role))) {
       throw new HttpException(403, "You can only update your own applications");
+    }
+    if (data.counsellorId) {
+      const counsellor = await counsellorRepo.getById(data.counsellorId);
+      if (!counsellor) throw new HttpException(404, "Counsellor not found");
     }
     const updated = await appRepo.update(id, data);
     if (!updated) throw new HttpException(500, "Failed to update application");

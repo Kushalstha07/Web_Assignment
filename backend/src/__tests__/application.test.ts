@@ -1,8 +1,13 @@
 import request from "supertest";
+import jwt from "jsonwebtoken";
 import app from "../app";
+import { SECRET_KEY } from "../configs/constant";
+import { CounsellorModel } from "../models/counsellor.model";
 
 let studentToken: string;
 let adminToken: string;
+let counsellorToken: string;
+let counsellorId: string;
 let applicationId: string;
 
 beforeAll(async () => {
@@ -27,26 +32,26 @@ beforeAll(async () => {
   });
   studentToken = studentRes.body.data.token;
 
-  // Register + login admin
-  await request(app).post("/api/v1/auth/register").send({
-    fullName: "Test Admin",
-    username: "testadmin",
-    email: "admin@test.com",
-    phoneNumber: "1234567890",
-    studyLevel: "postgraduate",
-    destination: "usa",
-    fieldOfStudy: "Admin",
-    intake: "fall",
-    budget: "20k-35k",
-    password: "password123",
-    role: "admin",
+  adminToken = jwt.sign(
+    { id: "application-admin", email: "admin@test.com", role: "admin" },
+    SECRET_KEY,
+  );
+  const counsellor = await CounsellorModel.create({
+    userId: "application-counsellor-user",
+    fullName: "Application Counsellor",
+    email: "application-counsellor@test.com",
+    phoneNumber: "9800000011",
+    specialties: ["university-admissions"],
   });
-
-  const adminRes = await request(app).post("/api/v1/auth/login").send({
-    email: "admin@test.com",
-    password: "password123",
-  });
-  adminToken = adminRes.body.data.token;
+  counsellorId = counsellor._id.toString();
+  counsellorToken = jwt.sign(
+    {
+      id: "application-counsellor-user",
+      email: "application-counsellor@test.com",
+      role: "counsellor",
+    },
+    SECRET_KEY,
+  );
 });
 
 describe("Application API", () => {
@@ -100,6 +105,37 @@ describe("Application API", () => {
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(Array.isArray(res.body.data)).toBe(true);
+  });
+
+  it("should let an admin assign a counsellor", async () => {
+    const res = await request(app)
+      .patch(`/api/v1/applications/${applicationId}`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ counsellorId });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.counsellorId).toBe(counsellorId);
+  });
+
+  it("should return only assigned applications to a counsellor", async () => {
+    const res = await request(app)
+      .get("/api/v1/applications/assigned")
+      .set("Authorization", `Bearer ${counsellorToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].id).toBe(applicationId);
+    expect(res.body.data[0].studentName).toBe("Test Student");
+  });
+
+  it("should let an assigned counsellor update workflow stage", async () => {
+    const res = await request(app)
+      .patch(`/api/v1/applications/${applicationId}`)
+      .set("Authorization", `Bearer ${counsellorToken}`)
+      .send({ stage: "verified" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.stage).toBe("verified");
   });
 
   // Submit application
