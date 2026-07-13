@@ -37,6 +37,7 @@ export default function TopNav({ onOpenSidebar }: { onOpenSidebar: () => void })
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationError, setNotificationError] = useState("");
 
   const refreshNotifications = useCallback(async () => {
     if (!user) return;
@@ -44,14 +45,22 @@ export default function TopNav({ onOpenSidebar }: { onOpenSidebar: () => void })
       const [list, unread] = await Promise.all([getNotifications(1, 10), getUnreadCount()]);
       setNotifications(list.data || []);
       setUnreadCount(unread.data?.count || 0);
-    } catch {
-      setNotifications([]);
+      setNotificationError("");
+    } catch (cause) {
+      setNotificationError(cause instanceof Error ? cause.message : "Unable to load notifications");
     }
   }, [user]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void refreshNotifications(), 0);
-    return () => window.clearTimeout(timer);
+    const interval = window.setInterval(() => void refreshNotifications(), 60_000);
+    const refreshOnFocus = () => void refreshNotifications();
+    window.addEventListener("focus", refreshOnFocus);
+    return () => {
+      window.clearTimeout(timer);
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refreshOnFocus);
+    };
   }, [refreshNotifications]);
 
   const openNotifications = async () => {
@@ -59,14 +68,22 @@ export default function TopNav({ onOpenSidebar }: { onOpenSidebar: () => void })
     setShowNotifications(next);
     if (next) {
       setNotificationsLoading(true);
-      await refreshNotifications();
-      setNotificationsLoading(false);
+      try {
+        await refreshNotifications();
+      } finally {
+        setNotificationsLoading(false);
+      }
     }
   };
 
   const openNotification = async (notification: Notification) => {
     if (!notification.read) {
-      await markNotificationsAsRead([notification.id]);
+      try {
+        await markNotificationsAsRead([notification.id]);
+      } catch (cause) {
+        setNotificationError(cause instanceof Error ? cause.message : "Unable to mark notification as read");
+        return;
+      }
       setNotifications((current) => current.map((item) => item.id === notification.id ? { ...item, read: true } : item));
       setUnreadCount((count) => Math.max(0, count - 1));
     }
@@ -75,14 +92,24 @@ export default function TopNav({ onOpenSidebar }: { onOpenSidebar: () => void })
   };
 
   const markAllRead = async () => {
-    await markAllNotificationsAsRead();
+    try {
+      await markAllNotificationsAsRead();
+    } catch (cause) {
+      setNotificationError(cause instanceof Error ? cause.message : "Unable to mark notifications as read");
+      return;
+    }
     setNotifications((current) => current.map((item) => ({ ...item, read: true })));
     setUnreadCount(0);
   };
 
   const removeNotification = async (id: string) => {
     const removed = notifications.find((item) => item.id === id);
-    await deleteNotification(id);
+    try {
+      await deleteNotification(id);
+    } catch (cause) {
+      setNotificationError(cause instanceof Error ? cause.message : "Unable to delete notification");
+      return;
+    }
     setNotifications((current) => current.filter((item) => item.id !== id));
     if (removed && !removed.read) setUnreadCount((count) => Math.max(0, count - 1));
   };
@@ -134,6 +161,7 @@ export default function TopNav({ onOpenSidebar }: { onOpenSidebar: () => void })
           <div className="relative">
             <button
               onClick={openNotifications}
+              aria-label="Open notifications"
               className="relative rounded-[12px] p-2 text-[#64748B] transition-all hover:bg-[#F8FAFC] hover:text-[#0F172A]"
             >
               <Bell className="h-5 w-5" />
@@ -144,6 +172,7 @@ export default function TopNav({ onOpenSidebar }: { onOpenSidebar: () => void })
               <div className="fixed inset-x-3 top-16 mt-2 rounded-[20px] border border-[#E5E7EB] bg-white p-4 shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:w-96">
                 <div className="mb-3 flex items-center justify-between"><h3 className="text-sm font-bold text-[#0F172A]">Notifications</h3>{unreadCount > 0 && <button onClick={markAllRead} className="flex items-center gap-1 text-xs font-semibold text-[#2563EB]"><CheckCheck className="h-3.5 w-3.5"/>Mark all read</button>}</div>
                 <div className="max-h-96 space-y-2 overflow-y-auto">
+                  {notificationError && <p className="rounded-lg bg-red-50 p-2 text-xs text-red-700">{notificationError}</p>}
                   {notificationsLoading && <p className="py-6 text-center text-sm text-[#64748B]">Loading…</p>}
                   {!notificationsLoading && notifications.length === 0 && <p className="py-6 text-center text-sm text-[#64748B]">You are all caught up.</p>}
                   {notifications.map((notification) => (

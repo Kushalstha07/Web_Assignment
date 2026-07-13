@@ -4,6 +4,7 @@ import { CreateConversationDTOType, SendMessageDTOType, MarkReadDTOType } from "
 import { HttpException } from "../exceptions/http-exception";
 import { IConversation } from "../models/conversation.model";
 import { IMessage } from "../models/message.model";
+import { notificationService } from "./notification.service";
 
 const msgRepo = new MessageMongoRepository();
 
@@ -48,6 +49,17 @@ export class MessageService {
     const msgData: MessageType = { conversationId: data.conversationId, senderId, content: data.content, status: "sent", attachments: data.attachments || [] };
     const msg = await msgRepo.sendMessage(msgData);
     await msgRepo.updateConversationLastMessage(data.conversationId, data.content.substring(0, 100));
+    await Promise.all(conv.participants
+      .filter((participantId) => participantId !== senderId)
+      .map((participantId) => notificationService.notify({
+        userId: participantId,
+        title: conv.title || "New message",
+        message: data.content.length > 120 ? `${data.content.slice(0, 117)}...` : data.content,
+        type: "info",
+        category: "message",
+        link: `/messages?conversation=${data.conversationId}`,
+        metadata: { conversationId: data.conversationId, messageId: msg._id.toString() },
+      })));
     return toSafeMessage(msg);
   }
 

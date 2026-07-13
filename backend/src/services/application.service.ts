@@ -5,6 +5,7 @@ import { HttpException } from "../exceptions/http-exception";
 import { IApplication } from "../models/application.model";
 import { CounsellorMongoRepository } from "../repositories/counsellor.repository";
 import { UserModel } from "../models/user.model";
+import { notificationService } from "./notification.service";
 
 const appRepo = new ApplicationMongoRepository();
 const counsellorRepo = new CounsellorMongoRepository();
@@ -123,6 +124,45 @@ export class ApplicationService {
     }
     const updated = await appRepo.update(id, data);
     if (!updated) throw new HttpException(500, "Failed to update application");
+
+    if (data.counsellorId && data.counsellorId !== app.counsellorId) {
+      const counsellor = await counsellorRepo.getById(data.counsellorId);
+      if (counsellor) {
+        await notificationService.notify({
+          userId: counsellor.userId,
+          title: "New application assigned",
+          message: `You have been assigned an application for ${updated.program}.`,
+          type: "info",
+          category: "application",
+          link: "/applications",
+          metadata: { applicationId: id },
+        });
+      }
+      await notificationService.notify({
+        userId: app.studentId,
+        title: "Counsellor assigned",
+        message: "A counsellor has been assigned to support your application.",
+        type: "info",
+        category: "application",
+        link: "/applications",
+        metadata: { applicationId: id },
+      });
+    }
+
+    const statusChanged = data.status !== undefined && data.status !== app.status;
+    const stageChanged = data.stage !== undefined && data.stage !== app.stage;
+    if (role !== "student" && (statusChanged || stageChanged)) {
+      const update = statusChanged ? `status is now ${updated.status}` : `stage is now ${updated.stage}`;
+      await notificationService.notify({
+        userId: app.studentId,
+        title: "Application updated",
+        message: `Your ${updated.program} application ${update}.`,
+        type: updated.status === "accepted" ? "success" : updated.status === "rejected" ? "error" : "info",
+        category: "application",
+        link: "/applications",
+        metadata: { applicationId: id },
+      });
+    }
     return toSafeApplication(updated);
   }
 
@@ -138,6 +178,15 @@ export class ApplicationService {
       submittedDate: data.submittedDate,
     } as any);
     if (!updated) throw new HttpException(500, "Failed to submit application");
+    await notificationService.notify({
+      userId,
+      title: "Application submitted",
+      message: `Your ${updated.program} application was submitted successfully.`,
+      type: "success",
+      category: "application",
+      link: "/applications",
+      metadata: { applicationId: id },
+    });
     return toSafeApplication(updated);
   }
 

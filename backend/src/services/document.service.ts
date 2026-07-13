@@ -7,6 +7,7 @@ import { unlink } from "fs/promises";
 import path from "path";
 import { access } from "fs/promises";
 import { DOCUMENT_UPLOAD_DIRECTORY } from "../configs/storage";
+import { notificationService } from "./notification.service";
 
 const docRepo = new DocumentMongoRepository();
 
@@ -126,6 +127,17 @@ export class DocumentService {
       verifiedAt: new Date().toISOString(),
     } as any);
     if (!updated) throw new HttpException(500, "Failed to verify document");
+    await notificationService.notify({
+      userId: doc.userId,
+      title: data.status === "verified" ? "Document verified" : "Document needs attention",
+      message: data.status === "verified"
+        ? `${doc.originalName} was verified successfully.`
+        : `${doc.originalName} was rejected${data.notes ? `: ${data.notes}` : "."}`,
+      type: data.status === "verified" ? "success" : "error",
+      category: "document",
+      link: "/profile",
+      metadata: { documentId: id },
+    });
     return toSafeDocument(updated);
   }
 

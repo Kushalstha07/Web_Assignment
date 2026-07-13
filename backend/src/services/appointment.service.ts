@@ -4,6 +4,7 @@ import { CreateAppointmentDTOType, UpdateAppointmentDTOType, CancelAppointmentDT
 import { HttpException } from "../exceptions/http-exception";
 import { IAppointment } from "../models/appointment.model";
 import { CounsellorMongoRepository } from "../repositories/counsellor.repository";
+import { notificationService } from "./notification.service";
 
 const appointmentRepo = new AppointmentMongoRepository();
 const counsellorRepo = new CounsellorMongoRepository();
@@ -72,6 +73,26 @@ export class AppointmentService {
       notes: data.notes,
     };
     const created = await appointmentRepo.create(appData);
+    await Promise.all([
+      notificationService.notify({
+        userId: counsellor.userId,
+        title: "New appointment booked",
+        message: `A student booked ${data.date} from ${data.startTime} to ${data.endTime}.`,
+        type: "info",
+        category: "appointment",
+        link: "/appointments",
+        metadata: { appointmentId: created._id.toString() },
+      }),
+      notificationService.notify({
+        userId: studentId,
+        title: "Appointment booked",
+        message: `Your appointment with ${counsellor.fullName} is scheduled for ${data.date} at ${data.startTime}.`,
+        type: "success",
+        category: "appointment",
+        link: "/appointments",
+        metadata: { appointmentId: created._id.toString() },
+      }),
+    ]);
     return toSafeAppointment(created);
   }
 
@@ -123,6 +144,19 @@ export class AppointmentService {
       cancellationReason: data.cancellationReason,
     } as any);
     if (!updated) throw new HttpException(500, "Failed to cancel appointment");
+    const counsellor = await counsellorRepo.getById(app.counsellorId);
+    const recipients = new Set<string>([app.studentId]);
+    if (counsellor) recipients.add(counsellor.userId);
+    recipients.delete(userId);
+    await Promise.all([...recipients].map((recipientId) => notificationService.notify({
+      userId: recipientId,
+      title: "Appointment cancelled",
+      message: `The appointment on ${app.date} at ${app.startTime} was cancelled.`,
+      type: "warning",
+      category: "appointment",
+      link: "/appointments",
+      metadata: { appointmentId: id },
+    })));
     return toSafeAppointment(updated);
   }
 
@@ -134,6 +168,19 @@ export class AppointmentService {
     }
     const updated = await appointmentRepo.update(id, data);
     if (!updated) throw new HttpException(500, "Failed to update appointment");
+    const counsellor = await counsellorRepo.getById(app.counsellorId);
+    const recipientId = role === "student" ? counsellor?.userId : app.studentId;
+    if (recipientId && recipientId !== userId) {
+      await notificationService.notify({
+        userId: recipientId,
+        title: "Appointment updated",
+        message: `The appointment on ${updated.date} at ${updated.startTime} has been updated.`,
+        type: "info",
+        category: "appointment",
+        link: "/appointments",
+        metadata: { appointmentId: id },
+      });
+    }
     return toSafeAppointment(updated);
   }
 }

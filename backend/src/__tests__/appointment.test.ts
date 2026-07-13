@@ -3,11 +3,13 @@ import jwt from "jsonwebtoken";
 import app from "../app";
 import { SECRET_KEY } from "../configs/constant";
 import { CounsellorModel } from "../models/counsellor.model";
+import { NotificationModel } from "../models/notification.model";
 
 let studentToken: string;
 let counsellorToken: string;
 let counsellorId: string;
 let appointmentId: string;
+let studentId: string;
 
 beforeAll(async () => {
   await request(app).post("/api/v1/auth/register").send({
@@ -28,6 +30,7 @@ beforeAll(async () => {
     password: "password123",
   });
   studentToken = studentRes.body.data.token;
+  studentId = (jwt.decode(studentToken) as { id: string }).id;
 
   const counsellor = await CounsellorModel.create({
     userId: "appt-counsellor-user",
@@ -60,6 +63,8 @@ describe("Appointment API", () => {
     expect(res.body.success).toBe(true);
     expect(res.body.data.status).toBe("scheduled");
     appointmentId = res.body.data.id;
+    expect(await NotificationModel.exists({ userId: "appt-counsellor-user", title: "New appointment booked" })).toBeTruthy();
+    expect(await NotificationModel.exists({ userId: studentId, title: "Appointment booked" })).toBeTruthy();
   });
 
   it("should get my appointments", async () => {
@@ -121,6 +126,7 @@ describe("Appointment API", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.notes).toBe("Counsellor confirmed the preparation notes");
+    expect(await NotificationModel.exists({ userId: studentId, title: "Appointment updated" })).toBeTruthy();
   });
 
   it("should cancel an appointment", async () => {
@@ -131,5 +137,6 @@ describe("Appointment API", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe("cancelled");
+    expect(await NotificationModel.exists({ userId: "appt-counsellor-user", title: "Appointment cancelled" })).toBeTruthy();
   });
 });

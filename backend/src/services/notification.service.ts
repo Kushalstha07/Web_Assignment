@@ -1,5 +1,5 @@
 import { NotificationMongoRepository } from "../repositories/notification.repository";
-import { NotificationType } from "../types/notification.type";
+import { NotificationSchema, NotificationInput } from "../types/notification.type";
 import { HttpException } from "../exceptions/http-exception";
 import { INotification } from "../models/notification.model";
 
@@ -33,9 +33,17 @@ export function toSafeNotification(n: INotification): SafeNotification {
 }
 
 export class NotificationService {
-  async create(data: NotificationType): Promise<SafeNotification> {
-    const created = await notifRepo.create(data);
+  async create(data: NotificationInput): Promise<SafeNotification> {
+    const created = await notifRepo.create(NotificationSchema.parse(data));
     return toSafeNotification(created);
+  }
+
+  async notify(data: NotificationInput): Promise<void> {
+    try {
+      await this.create(data);
+    } catch (error) {
+      console.error("Failed to create notification", error);
+    }
   }
 
   async getMyNotifications(userId: string, page = 1, limit = 20): Promise<{ data: SafeNotification[]; total: number }> {
@@ -56,7 +64,9 @@ export class NotificationService {
   }
 
   async delete(id: string, userId: string): Promise<boolean> {
-    return notifRepo.delete(id, userId);
+    const deleted = await notifRepo.delete(id, userId);
+    if (!deleted) throw new HttpException(404, "Notification not found");
+    return true;
   }
 }
 

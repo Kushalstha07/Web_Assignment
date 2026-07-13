@@ -5,12 +5,14 @@ import jwt from "jsonwebtoken";
 import app from "../app";
 import { SECRET_KEY } from "../configs/constant";
 import { DOCUMENT_UPLOAD_DIRECTORY } from "../configs/storage";
+import { NotificationModel } from "../models/notification.model";
 
 let studentToken: string;
 let adminToken: string;
 let otherStudentToken: string;
 let documentId: string;
 let documentFileName: string;
+let studentId: string;
 
 beforeAll(async () => {
   // Register student
@@ -32,6 +34,7 @@ beforeAll(async () => {
     password: "password123",
   });
   studentToken = studentRes.body.data.token;
+  studentId = (jwt.decode(studentToken) as { id: string }).id;
 
   adminToken = jwt.sign(
     { id: "document-admin", email: "docadmin@test.com", role: "admin" },
@@ -153,6 +156,7 @@ describe("Document API", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe("verified");
+    expect(await NotificationModel.exists({ userId: studentId, title: "Document verified" })).toBeTruthy();
   });
 
   // Delete document

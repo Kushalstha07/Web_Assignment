@@ -48,4 +48,24 @@ describe("Notification API", () => {
   it("rejects requests without authentication", async () => {
     expect((await request(app).get("/api/v1/notifications")).status).toBe(401);
   });
+
+  it("validates pagination and notification identifiers", async () => {
+    const list = await request(app)
+      .get("/api/v1/notifications?page=-2&limit=500")
+      .set("Authorization", `Bearer ${token}`);
+    expect(list.status).toBe(200);
+    expect(list.body.meta.page).toBe(1);
+    expect(list.body.meta.limit).toBe(50);
+
+    const mark = await request(app)
+      .patch("/api/v1/notifications/read")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ notificationIds: ["not-an-id"] });
+    expect(mark.status).toBe(400);
+
+    const remove = await request(app)
+      .delete("/api/v1/notifications/not-an-id")
+      .set("Authorization", `Bearer ${token}`);
+    expect(remove.status).toBe(400);
+  });
 });

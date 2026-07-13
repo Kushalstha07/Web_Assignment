@@ -3,12 +3,14 @@ import jwt from "jsonwebtoken";
 import app from "../app";
 import { SECRET_KEY } from "../configs/constant";
 import { CounsellorModel } from "../models/counsellor.model";
+import { NotificationModel } from "../models/notification.model";
 
 let studentToken: string;
 let adminToken: string;
 let counsellorToken: string;
 let counsellorId: string;
 let applicationId: string;
+let studentId: string;
 
 beforeAll(async () => {
   // Register a student
@@ -31,6 +33,7 @@ beforeAll(async () => {
     password: "password123",
   });
   studentToken = studentRes.body.data.token;
+  studentId = (jwt.decode(studentToken) as { id: string }).id;
 
   adminToken = jwt.sign(
     { id: "application-admin", email: "admin@test.com", role: "admin" },
@@ -115,6 +118,8 @@ describe("Application API", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.counsellorId).toBe(counsellorId);
+    expect(await NotificationModel.exists({ userId: "application-counsellor-user", category: "application" })).toBeTruthy();
+    expect(await NotificationModel.exists({ userId: studentId, title: "Counsellor assigned" })).toBeTruthy();
   });
 
   it("should return only assigned applications to a counsellor", async () => {
@@ -147,6 +152,7 @@ describe("Application API", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.stage).toBe("verified");
+    expect(await NotificationModel.exists({ userId: studentId, title: "Application updated" })).toBeTruthy();
   });
 
   // Submit application
@@ -158,6 +164,7 @@ describe("Application API", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe("submitted");
+    expect(await NotificationModel.exists({ userId: studentId, title: "Application submitted" })).toBeTruthy();
   });
 
   it("should reject student workflow status changes", async () => {
