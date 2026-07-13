@@ -1,12 +1,11 @@
 import { AcademicProfileModel } from "../models/academic-profile.model";
 import { IAcademicProfile } from "../models/academic-profile.model";
 import { AcademicProfileType } from "../types/academic-profile.type";
-import { UpdateAcademicProfileDTO } from "../dtos/academic-profile.dto";
 
 export interface IAcademicProfileRepository {
   createProfile(profile: AcademicProfileType): Promise<IAcademicProfile>;
   getByUserId(userId: string): Promise<IAcademicProfile | null>;
-  updateProfile(userId: string, update: UpdateAcademicProfileDTO): Promise<IAcademicProfile | null>;
+  updateProfile(userId: string, update: Partial<AcademicProfileType>): Promise<IAcademicProfile | null>;
   upsertProfile(userId: string, data: AcademicProfileType): Promise<IAcademicProfile>;
 }
 
@@ -21,11 +20,11 @@ export class AcademicProfileMongoRepository implements IAcademicProfileRepositor
     return profile ? (profile.toObject() as IAcademicProfile) : null;
   }
 
-  async updateProfile(userId: string, update: UpdateAcademicProfileDTO): Promise<IAcademicProfile | null> {
+  async updateProfile(userId: string, update: Partial<AcademicProfileType>): Promise<IAcademicProfile | null> {
     const updated = await AcademicProfileModel.findOneAndUpdate(
       { userId },
       { $set: update },
-      { new: true },
+      { returnDocument: "after", runValidators: true },
     );
     return updated ? (updated.toObject() as IAcademicProfile) : null;
   }
@@ -34,7 +33,7 @@ export class AcademicProfileMongoRepository implements IAcademicProfileRepositor
     const upserted = await AcademicProfileModel.findOneAndUpdate(
       { userId },
       { $set: data },
-      { new: true, upsert: true },
+      { returnDocument: "after", upsert: true, runValidators: true },
     );
     return upserted.toObject() as IAcademicProfile;
   }
