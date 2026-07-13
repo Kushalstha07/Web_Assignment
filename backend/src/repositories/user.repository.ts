@@ -10,6 +10,10 @@ export interface IUserRepository {
   getAll(): Promise<IUser[]>;
   update(id: string, user: Partial<IUser>): Promise<IUser | null>;
   delete(id: string): Promise<boolean>;
+  setPasswordResetToken(id: string, tokenHash: string, expiresAt: Date): Promise<void>;
+  clearPasswordResetToken(id: string): Promise<void>;
+  consumePasswordResetToken(tokenHash: string, password: string): Promise<IUser | null>;
+  updatePassword(id: string, password: string): Promise<IUser | null>;
 
   // Admin paginated search
   getAllPaginated(page: number, limit: number, searchTerm?: string): Promise<{ users: IUser[]; total: number }>;
@@ -22,7 +26,7 @@ export class UserMongoRepository implements IUserRepository {
   }
 
   async getUserByEmail(email: string): Promise<IUser | null> {
-    const found = await UserModel.findOne({ email });
+    const found = await UserModel.findOne({ email }).select("+sessionVersion");
     return found;
   }
 
@@ -43,9 +47,41 @@ export class UserMongoRepository implements IUserRepository {
 
   async update(id: string, user: Partial<IUser>): Promise<IUser | null> {
     const updated = await UserModel.findByIdAndUpdate(id, user, {
-      new: true,
+      returnDocument: "after",
     });
     return updated;
+  }
+
+  async setPasswordResetToken(id: string, tokenHash: string, expiresAt: Date): Promise<void> {
+    await UserModel.findByIdAndUpdate(id, {
+      $set: { resetPasswordTokenHash: tokenHash, resetPasswordExpiresAt: expiresAt },
+    });
+  }
+
+  async clearPasswordResetToken(id: string): Promise<void> {
+    await UserModel.findByIdAndUpdate(id, {
+      $unset: { resetPasswordTokenHash: 1, resetPasswordExpiresAt: 1 },
+    });
+  }
+
+  async consumePasswordResetToken(tokenHash: string, password: string): Promise<IUser | null> {
+    return UserModel.findOneAndUpdate(
+      { resetPasswordTokenHash: tokenHash, resetPasswordExpiresAt: { $gt: new Date() } },
+      {
+        $set: { password, passwordChangedAt: new Date() },
+        $unset: { resetPasswordTokenHash: 1, resetPasswordExpiresAt: 1 },
+        $inc: { sessionVersion: 1 },
+      },
+      { returnDocument: "after" },
+    );
+  }
+
+  async updatePassword(id: string, password: string): Promise<IUser | null> {
+    return UserModel.findByIdAndUpdate(
+      id,
+      { $set: { password, passwordChangedAt: new Date() }, $inc: { sessionVersion: 1 } },
+      { returnDocument: "after" },
+    );
   }
 
   async delete(id: string): Promise<boolean> {

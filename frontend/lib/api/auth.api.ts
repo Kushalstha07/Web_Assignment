@@ -50,3 +50,11 @@ export async function updateProfile(payload: FormData): Promise<ApiResponse<Safe
 export async function changePassword(payload: ChangePasswordPayload): Promise<ApiResponse<null>> {
   return apiClient("PUT", "/api/v1/auth/change-password", { body: payload });
 }
+
+export async function requestPasswordReset(email: string): Promise<ApiResponse<null>> {
+  return apiClient("POST", "/api/v1/auth/forgot-password", { body: { email } });
+}
+
+export async function resetPassword(payload: { token: string; newPassword: string; confirmNewPassword: string }): Promise<ApiResponse<null>> {
+  return apiClient("POST", "/api/v1/auth/reset-password", { body: payload });
+}

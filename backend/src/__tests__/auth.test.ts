@@ -1,6 +1,8 @@
 import request from "supertest";
 import app from "../app";
 import { UserModel } from "../models/user.model";
+import { mailService } from "../services/mail.service";
+import { createHash } from "crypto";
 
 const credentials = {
   email: "auth-session@test.com",
@@ -21,6 +23,7 @@ const registration = {
 };
 
 beforeEach(async () => {
+  jest.restoreAllMocks();
   await UserModel.deleteMany({ email: credentials.email });
 });
 
@@ -58,6 +61,65 @@ describe("Authentication sessions", () => {
     expect(wrongPassword.status).toBe(401);
     expect(unknown.body.message).toBe("Invalid email or password");
     expect(wrongPassword.body.message).toBe(unknown.body.message);
+  });
+
+  it("uses hashed, expiring, single-use password reset tokens", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/v1/auth/register").send(registration).expect(200);
+    await agent.post("/api/v1/auth/login").send(credentials).expect(200);
+
+    let resetUrl = "";
+    const mail = jest.spyOn(mailService, "sendPasswordReset").mockImplementation(async (_to, _name, url) => {
+      resetUrl = url;
+    });
+
+    const known = await request(app)
+      .post("/api/v1/auth/forgot-password")
+      .send({ email: credentials.email });
+    const unknown = await request(app)
+      .post("/api/v1/auth/forgot-password")
+      .send({ email: "missing-user@test.com" });
+
+    expect(known.status).toBe(200);
+    expect(unknown.status).toBe(200);
+    expect(known.body.message).toBe(unknown.body.message);
+    expect(mail).toHaveBeenCalledTimes(1);
+
+    const token = new URL(resetUrl).searchParams.get("token");
+    expect(token).toMatch(/^[0-9a-f]{64}$/);
+    const stored = await UserModel.findOne({ email: credentials.email })
+      .select("+resetPasswordTokenHash +resetPasswordExpiresAt");
+    expect(stored?.resetPasswordTokenHash).toBe(createHash("sha256").update(token!).digest("hex"));
+    expect(stored?.resetPasswordTokenHash).not.toBe(token);
+    expect(stored?.resetPasswordExpiresAt?.getTime()).toBeGreaterThan(Date.now());
+
+    await request(app)
+      .post("/api/v1/auth/reset-password")
+      .send({ token: "a".repeat(64), newPassword: "newPassword123", confirmNewPassword: "newPassword123" })
+      .expect(400);
+
+    await request(app)
+      .post("/api/v1/auth/reset-password")
+      .send({ token, newPassword: "newPassword123", confirmNewPassword: "newPassword123" })
+      .expect(200);
+
+    await request(app)
+      .post("/api/v1/auth/reset-password")
+      .send({ token, newPassword: "anotherPassword123", confirmNewPassword: "anotherPassword123" })
+      .expect(400);
+
+    await agent.get("/api/v1/auth/whoami").expect(401);
+    await request(app).post("/api/v1/auth/login").send(credentials).expect(401);
+    await request(app)
+      .post("/api/v1/auth/login")
+      .send({ email: credentials.email, password: "newPassword123" })
+      .expect(200);
+
+    const consumed = await UserModel.findOne({ email: credentials.email })
+      .select("+resetPasswordTokenHash +resetPasswordExpiresAt +sessionVersion");
+    expect(consumed?.resetPasswordTokenHash).toBeNull();
+    expect(consumed?.resetPasswordExpiresAt).toBeNull();
+    expect(consumed?.sessionVersion).toBe(1);
   });
 
   it("only returns CORS credentials headers for configured origins", async () => {

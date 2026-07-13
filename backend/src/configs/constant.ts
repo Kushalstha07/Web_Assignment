@@ -50,3 +50,23 @@ export const LOGIN_RATE_LIMIT_MAX = positiveInteger(
   "LOGIN_RATE_LIMIT_MAX",
   NODE_ENV === "test" ? 1000 : 10,
 );
+
+export const PASSWORD_RESET_RATE_LIMIT_WINDOW_MS = positiveInteger(
+  "PASSWORD_RESET_RATE_LIMIT_WINDOW_MS",
+  15 * 60 * 1000,
+);
+export const PASSWORD_RESET_RATE_LIMIT_MAX = positiveInteger(
+  "PASSWORD_RESET_RATE_LIMIT_MAX",
+  NODE_ENV === "test" ? 1000 : 5,
+);
+export const PASSWORD_RESET_TOKEN_TTL_MS = positiveInteger(
+  "PASSWORD_RESET_TOKEN_TTL_MS",
+  60 * 60 * 1000,
+);
+
+export const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+try {
+  new URL(FRONTEND_URL);
+} catch {
+  throw new Error("FRONTEND_URL must be a valid URL");
+}

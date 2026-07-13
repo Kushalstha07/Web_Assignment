@@ -2,6 +2,8 @@ import type { NextFunction, Request, Response } from "express";
 import {
   LOGIN_RATE_LIMIT_MAX,
   LOGIN_RATE_LIMIT_WINDOW_MS,
+  PASSWORD_RESET_RATE_LIMIT_MAX,
+  PASSWORD_RESET_RATE_LIMIT_WINDOW_MS,
 } from "../configs/constant";
 import { ApiResponseHelper } from "../uttils/apihelper.util";
 
@@ -14,6 +16,7 @@ type RateLimitOptions = {
   windowMs: number;
   maxRequests: number;
   key?: (req: Request) => string;
+  message?: string;
 };
 
 export function createRateLimiter(options: RateLimitOptions) {
@@ -44,7 +47,7 @@ export function createRateLimiter(options: RateLimitOptions) {
       );
       return ApiResponseHelper.error(
         res,
-        "Too many login attempts. Please try again later.",
+        options.message || "Too many login attempts. Please try again later.",
         429,
       );
     }
@@ -56,4 +59,12 @@ export function createRateLimiter(options: RateLimitOptions) {
 export const loginRateLimiter = createRateLimiter({
   windowMs: LOGIN_RATE_LIMIT_WINDOW_MS,
   maxRequests: LOGIN_RATE_LIMIT_MAX,
+  message: "Too many login attempts. Please try again later.",
+});
+
+export const passwordResetRateLimiter = createRateLimiter({
+  windowMs: PASSWORD_RESET_RATE_LIMIT_WINDOW_MS,
+  maxRequests: PASSWORD_RESET_RATE_LIMIT_MAX,
+  message: "Too many password reset requests. Please try again later.",
+  key: (req) => `${req.ip || "unknown"}:${String(req.body?.email || "").trim().toLowerCase()}`,
 });

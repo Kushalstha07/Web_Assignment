@@ -50,3 +50,20 @@ export const ChangePasswordDTO = z
   });
 
 export type ChangePasswordDTO = z.infer<typeof ChangePasswordDTO>;
+
+export const ForgotPasswordDTO = z.object({
+  email: z.string().trim().toLowerCase().email("Invalid email address"),
+});
+
+export type ForgotPasswordDTO = z.infer<typeof ForgotPasswordDTO>;
+
+export const ResetPasswordDTO = z.object({
+  token: z.string().regex(/^[0-9a-f]{64}$/i, "Invalid or expired reset link"),
+  newPassword: z.string().min(8, "New password must be at least 8 characters long"),
+  confirmNewPassword: z.string().min(1, "Please confirm your new password"),
+}).refine((data) => data.newPassword === data.confirmNewPassword, {
+  message: "Passwords do not match",
+  path: ["confirmNewPassword"],
+});
+
+export type ResetPasswordDTO = z.infer<typeof ResetPasswordDTO>;
