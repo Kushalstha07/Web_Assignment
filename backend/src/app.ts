@@ -13,12 +13,20 @@ import messageRoutes from "./routes/message.route";
 import scholarshipRoutes from "./routes/scholarship.route";
 import notificationRoutes from "./routes/notification.route";
 import analyticsRoutes from "./routes/analytics.route";
+import { CORS_ORIGINS } from "./configs/constant";
 
 const app: Application = express();
 
 app.use(
   cors({
-    origin: "*",
+    origin(origin, callback) {
+      if (!origin || CORS_ORIGINS.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      // Omit CORS headers for untrusted browser origins.
+      callback(null, false);
+    },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     credentials: true,
   })

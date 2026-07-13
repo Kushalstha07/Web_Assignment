@@ -5,7 +5,7 @@ import { IUser } from "../models/user.model";
 import { HttpException } from "../exceptions/http-exception";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { SECRET_KEY } from "../configs/constant";
+import { JWT_EXPIRES_IN, SECRET_KEY } from "../configs/constant";
 import { PaginationMeta } from "../uttils/apihelper.util";
 
 const userRepository = new UserMongoRepository();
@@ -76,7 +76,7 @@ export class UserService {
     const user = await userRepository.getUserByEmail(loginData.email);
 
     if (!user) {
-      throw new HttpException(400, "Invalid email");
+      throw new HttpException(401, "Invalid email or password");
     }
 
     const isPasswordValid = await bcryptjs.compare(
@@ -85,7 +85,7 @@ export class UserService {
     );
 
     if (!isPasswordValid) {
-      throw new HttpException(400, "Invalid password");
+      throw new HttpException(401, "Invalid email or password");
     }
 
     const token = jwt.sign(
@@ -96,7 +96,7 @@ export class UserService {
       },
       SECRET_KEY,
       {
-        expiresIn: "30d",
+        expiresIn: JWT_EXPIRES_IN,
       },
     );
 

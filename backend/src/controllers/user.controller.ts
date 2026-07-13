@@ -3,6 +3,7 @@ import { z } from "zod";
 import { CreateUserDTO, LoginUserDTO, UpdateUserDTO, ChangePasswordDTO } from "../dtos/user.dto";
 import { Request, Response } from "express";
 import { ApiResponseHelper } from "../uttils/apihelper.util";
+import { AUTH_COOKIE_OPTIONS } from "../configs/auth";
 
 declare global {
   namespace Express {
@@ -37,6 +38,7 @@ export class UserController {
       }
 
       const { user, token } = await userService.loginUser(result.data);
+      res.cookie("token", token, AUTH_COOKIE_OPTIONS);
       return ApiResponseHelper.success(res, { user, token }, "Login successful");
     } catch (err: any) {
       return ApiResponseHelper.error(res, err.message || "Internal Server Error", err.status || 500);

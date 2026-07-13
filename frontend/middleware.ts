@@ -36,7 +36,7 @@ const authPaths = ["/login", "/register"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const token = request.cookies.get("token")?.value || request.cookies.get("client-token")?.value;
+  const token = request.cookies.get("token")?.value;
 
   // Redirect authenticated users away from auth pages
   if (token && authPaths.some((path) => pathname.startsWith(path))) {

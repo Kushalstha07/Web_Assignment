@@ -2,6 +2,7 @@ import { Router } from "express";
 import { UserController } from "../controllers/user.controller";
 import { authenticate } from "../middlewares/auth.middleware";
 import { upload } from "../middlewares/upload.middleware";
+import { AUTH_COOKIE_OPTIONS } from "../configs/auth";
 
 const userRouter = Router();
 const userController = new UserController();
@@ -12,10 +13,8 @@ userRouter.post("/login", userController.loginUser);
 // Logout endpoint - clears the httpOnly token cookie
 userRouter.post("/logout", (req, res) => {
   res.clearCookie("token", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
+    ...AUTH_COOKIE_OPTIONS,
+    maxAge: undefined,
   });
   return res.json({ success: true, message: "Logged out successfully" });
 });

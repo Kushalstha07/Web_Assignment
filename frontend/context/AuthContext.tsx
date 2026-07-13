@@ -21,15 +21,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-/**
- * Read a cookie value by name from document.cookie
- */
-function getCookie(name: string): string | null {
-  if (typeof document === "undefined") return null;
-  const match = document.cookie.match(new RegExp(`(^| )${name}=([^;]+)`));
-  return match ? decodeURIComponent(match[2]) : null;
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SafeUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,21 +31,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       setError(null);
 
-      // Read the client-token cookie and pass it as Authorization header
-      const token = getCookie("client-token");
-
-      if (!token) {
-        setUser(null);
-        setLoading(false);
-        return;
-      }
-
-      // Use the Next.js proxy path (rewritten to backend by next.config.ts)
       const response = await fetch("/api/v1/auth/whoami", {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: "include",
         cache: "no-store",
       });
 
@@ -65,7 +44,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         // Invalid session - clear httpOnly cookie and redirect to login
         await fetch("/api/v1/auth/logout", { method: "POST" }).catch(() => {});
-        document.cookie = "client-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
         setUser(null);
       }
     } catch {
@@ -82,21 +60,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      // Attempt to call backend logout endpoint
-      const token = getCookie("client-token");
-      if (token) {
-        await fetch("/api/v1/auth/logout", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-          cache: "no-store",
-        }).catch(() => {});
-      }
+      await fetch("/api/v1/auth/logout", {
+        method: "POST",
+        credentials: "include",
+        cache: "no-store",
+      }).catch(() => {});
     } catch {
       // Ignore backend errors during logout
     }
-    // Clear both cookies regardless of backend response
-    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    document.cookie = "client-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     setUser(null);
   }, []);
 

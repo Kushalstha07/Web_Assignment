@@ -1,5 +1,5 @@
 /**
- * Shared API client that DRYs the repeated baseUrl/token/parse/cache boilerplate.
+ * Shared API client that DRYs repeated base URL, body, and cache boilerplate.
  * Every frontend API module should route through this helper.
  *
  * Usage:
@@ -22,12 +22,6 @@ function getBaseUrl(): string {
   return "";
 }
 
-function getToken(): string | null {
-  if (typeof document === "undefined") return null;
-  const match = document.cookie.match(new RegExp("(^| )client-token=([^;]+)"));
-  return match ? decodeURIComponent(match[2]) : null;
-}
-
 export async function apiClient<T>(
   method: string,
   path: string,
@@ -45,12 +39,7 @@ export async function apiClient<T>(
     });
   }
 
-  const token = getToken();
   const headers: Record<string, string> = {};
-
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
 
   // Only set Content-Type for non-FormData requests
   if (!formData) {
@@ -61,6 +50,7 @@ export async function apiClient<T>(
     method,
     headers,
     cache,
+    credentials: "include",
   };
 
   if (body && formData) {

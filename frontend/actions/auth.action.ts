@@ -113,9 +113,7 @@ export async function loginAction(
     path: "/",
   });
 
-  // Return the token so the client can set the non-httpOnly cookie reliably
   return {
     success: true,
-    token: response.data.token,
   };
 }
