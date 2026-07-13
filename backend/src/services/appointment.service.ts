@@ -3,8 +3,10 @@ import { AppointmentType } from "../types/appointment.type";
 import { CreateAppointmentDTOType, UpdateAppointmentDTOType, CancelAppointmentDTOType } from "../dtos/appointment.dto";
 import { HttpException } from "../exceptions/http-exception";
 import { IAppointment } from "../models/appointment.model";
+import { CounsellorMongoRepository } from "../repositories/counsellor.repository";
 
 const appointmentRepo = new AppointmentMongoRepository();
+const counsellorRepo = new CounsellorMongoRepository();
 
 export type SafeAppointment = {
   id: string;
@@ -40,7 +42,26 @@ function toSafeAppointment(a: IAppointment): SafeAppointment {
 }
 
 export class AppointmentService {
+  private async canAccess(
+    appointment: IAppointment,
+    userId: string,
+    role: string,
+  ): Promise<boolean> {
+    if (role === "admin") return true;
+    if (role === "student") return appointment.studentId === userId;
+    if (role === "counsellor") {
+      const counsellor = await counsellorRepo.getByUserId(userId);
+      return counsellor?._id.toString() === appointment.counsellorId;
+    }
+    return false;
+  }
+
   async create(data: CreateAppointmentDTOType, studentId: string): Promise<SafeAppointment> {
+    const counsellor = await counsellorRepo.getById(data.counsellorId);
+    if (!counsellor) throw new HttpException(404, "Counsellor not found");
+    if (!counsellor.available) {
+      throw new HttpException(409, "Counsellor is not accepting appointments");
+    }
     const appData: AppointmentType = {
       studentId,
       counsellorId: data.counsellorId,
@@ -57,14 +78,22 @@ export class AppointmentService {
   async getById(id: string, userId: string, role: string): Promise<SafeAppointment> {
     const app = await appointmentRepo.getById(id);
     if (!app) throw new HttpException(404, "Appointment not found");
-    if (role !== "admin" && app.studentId !== userId && app.counsellorId !== userId) {
+    if (!(await this.canAccess(app, userId, role))) {
       throw new HttpException(403, "You can only access your own appointments");
     }
     return toSafeAppointment(app);
   }
 
-  async getMyAppointments(studentId: string): Promise<SafeAppointment[]> {
-    const apps = await appointmentRepo.getByStudentId(studentId);
+  async getMyAppointments(userId: string, role: string): Promise<SafeAppointment[]> {
+    if (role === "counsellor") {
+      const counsellor = await counsellorRepo.getByUserId(userId);
+      if (!counsellor) throw new HttpException(404, "Counsellor profile not found");
+      const assigned = await appointmentRepo.getByCounsellorId(
+        counsellor._id.toString(),
+      );
+      return assigned.map(toSafeAppointment);
+    }
+    const apps = await appointmentRepo.getByStudentId(userId);
     return apps.map(toSafeAppointment);
   }
 
@@ -86,7 +115,7 @@ export class AppointmentService {
   async cancel(id: string, data: CancelAppointmentDTOType, userId: string, role: string): Promise<SafeAppointment> {
     const app = await appointmentRepo.getById(id);
     if (!app) throw new HttpException(404, "Appointment not found");
-    if (role !== "admin" && app.studentId !== userId && app.counsellorId !== userId) {
+    if (!(await this.canAccess(app, userId, role))) {
       throw new HttpException(403, "You can only cancel your own appointments");
     }
     const updated = await appointmentRepo.update(id, {
@@ -100,7 +129,7 @@ export class AppointmentService {
   async update(id: string, data: UpdateAppointmentDTOType, userId: string, role: string): Promise<SafeAppointment> {
     const app = await appointmentRepo.getById(id);
     if (!app) throw new HttpException(404, "Appointment not found");
-    if (role !== "admin" && app.studentId !== userId && app.counsellorId !== userId) {
+    if (!(await this.canAccess(app, userId, role))) {
       throw new HttpException(403, "You can only update your own appointments");
     }
     const updated = await appointmentRepo.update(id, data);

@@ -32,6 +32,21 @@ export class CounsellorController {
     }
   }
 
+  async getMe(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) return ApiResponseHelper.error(res, "Unauthorized", 401);
+      const counsellor = await counsellorService.getByUserId(userId);
+      return ApiResponseHelper.success(res, counsellor, "Counsellor fetched");
+    } catch (error) {
+      if (error instanceof HttpException) {
+        return ApiResponseHelper.error(res, error.message, error.status);
+      }
+      const message = error instanceof Error ? error.message : "Something went wrong";
+      return ApiResponseHelper.error(res, message, 500);
+    }
+  }
+
   async getAll(req: Request, res: Response) {
     try {
       const available = req.query.available === "true" ? true : req.query.available === "false" ? false : undefined;
@@ -70,6 +85,28 @@ export class CounsellorController {
       return ApiResponseHelper.success(res, counsellor, "Counsellor updated");
     } catch (error) {
       if (error instanceof HttpException) return ApiResponseHelper.error(res, error.message, error.status);
+      const message = error instanceof Error ? error.message : "Something went wrong";
+      return ApiResponseHelper.error(res, message, 500);
+    }
+  }
+
+  async updateMe(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) return ApiResponseHelper.error(res, "Unauthorized", 401);
+      const parsed = UpdateCounsellorDTO.safeParse(req.body);
+      if (!parsed.success) {
+        const errors = parsed.error.issues
+          .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+          .join(", ");
+        return ApiResponseHelper.error(res, `Validation error: ${errors}`, 400);
+      }
+      const counsellor = await counsellorService.updateOwn(userId, parsed.data);
+      return ApiResponseHelper.success(res, counsellor, "Counsellor updated");
+    } catch (error) {
+      if (error instanceof HttpException) {
+        return ApiResponseHelper.error(res, error.message, error.status);
+      }
       const message = error instanceof Error ? error.message : "Something went wrong";
       return ApiResponseHelper.error(res, message, 500);
     }

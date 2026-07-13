@@ -59,6 +59,12 @@ export class CounsellorService {
     return toSafeCounsellor(c);
   }
 
+  async getByUserId(userId: string): Promise<SafeCounsellor> {
+    const counsellor = await counsellorRepo.getByUserId(userId);
+    if (!counsellor) throw new HttpException(404, "Counsellor profile not found");
+    return toSafeCounsellor(counsellor);
+  }
+
   async getAll(available?: boolean, specialty?: string): Promise<SafeCounsellor[]> {
     const cs = await counsellorRepo.getAll(available, specialty);
     return cs.map(toSafeCounsellor);
@@ -73,6 +79,15 @@ export class CounsellorService {
     const updated = await counsellorRepo.update(id, data);
     if (!updated) throw new HttpException(500, "Failed to update counsellor");
     return toSafeCounsellor(updated);
+  }
+
+  async updateOwn(
+    userId: string,
+    data: UpdateCounsellorDTOType,
+  ): Promise<SafeCounsellor> {
+    const counsellor = await counsellorRepo.getByUserId(userId);
+    if (!counsellor) throw new HttpException(404, "Counsellor profile not found");
+    return this.update(counsellor._id.toString(), data);
   }
 
   async delete(id: string): Promise<boolean> {

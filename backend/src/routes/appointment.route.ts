@@ -5,7 +5,7 @@ import { AppointmentController } from "../controllers/appointment.controller";
 const router = Router();
 const controller = new AppointmentController();
 
-router.post("/", authenticate, controller.create.bind(controller));
+router.post("/", authenticate, authorize("student"), controller.create.bind(controller));
 router.get("/", authenticate, controller.getMyAppointments.bind(controller));
 router.get("/all", authenticate, authorize("admin"), controller.getAll.bind(controller));
 router.get("/date-range", authenticate, authorize("admin"), controller.getByDateRange.bind(controller));
