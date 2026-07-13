@@ -13,6 +13,24 @@ export interface ApiClientOptions {
   formData?: boolean;
   params?: Record<string, string>;
   cache?: RequestCache;
+  signal?: AbortSignal;
+}
+
+type ErrorPayload = {
+  message?: string;
+  data?: unknown;
+};
+
+export class ApiError extends Error {
+  readonly status: number;
+  readonly data?: unknown;
+
+  constructor(status: number, message: string, data?: unknown) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.data = data;
+  }
 }
 
 function getBaseUrl(): string {
@@ -27,7 +45,7 @@ export async function apiClient<T>(
   path: string,
   options: ApiClientOptions = {},
 ): Promise<T> {
-  const { body, formData, params, cache = "no-store" } = options;
+  const { body, formData, params, cache = "no-store", signal } = options;
 
   const baseUrl = getBaseUrl();
   const url = new URL(`${baseUrl}${path}`, typeof window === "undefined" ? undefined : window.location.origin);
@@ -51,6 +69,7 @@ export async function apiClient<T>(
     headers,
     cache,
     credentials: "include",
+    signal,
   };
 
   if (body && formData) {
@@ -60,5 +79,31 @@ export async function apiClient<T>(
   }
 
   const response = await fetch(url.toString(), fetchOptions);
-  return response.json();
+  const contentType = response.headers.get("content-type") || "";
+  let payload: unknown;
+
+  if (response.status !== 204) {
+    if (contentType.includes("application/json")) {
+      payload = await response.json().catch(() => undefined);
+    } else {
+      const text = await response.text();
+      payload = text || undefined;
+    }
+  }
+
+  if (!response.ok) {
+    const errorPayload =
+      payload && typeof payload === "object" ? (payload as ErrorPayload) : undefined;
+    const message =
+      errorPayload?.message ||
+      (typeof payload === "string" ? payload : undefined) ||
+      `Request failed with status ${response.status}`;
+
+    if (response.status === 401 && typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("auth:unauthorized"));
+    }
+    throw new ApiError(response.status, message, errorPayload?.data);
+  }
+
+  return payload as T;
 }

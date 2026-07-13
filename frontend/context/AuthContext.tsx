@@ -55,8 +55,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    refreshUser();
+    const timer = window.setTimeout(() => void refreshUser(), 0);
+    return () => window.clearTimeout(timer);
   }, [refreshUser]);
+
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setUser(null);
+      setError("Your session has expired. Please sign in again.");
+    };
+    window.addEventListener("auth:unauthorized", handleUnauthorized);
+    return () => window.removeEventListener("auth:unauthorized", handleUnauthorized);
+  }, []);
 
   const logout = useCallback(async () => {
     try {
