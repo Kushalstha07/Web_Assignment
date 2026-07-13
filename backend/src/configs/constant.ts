@@ -33,3 +33,20 @@ export const CORS_ORIGINS = (process.env.CORS_ORIGINS || "http://localhost:3000"
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
+
+function positiveInteger(name: string, fallback: number): number {
+  const value = Number(process.env[name] || fallback);
+  if (!Number.isInteger(value) || value < 1) {
+    throw new Error(`${name} must be a positive integer`);
+  }
+  return value;
+}
+
+export const LOGIN_RATE_LIMIT_WINDOW_MS = positiveInteger(
+  "LOGIN_RATE_LIMIT_WINDOW_MS",
+  15 * 60 * 1000,
+);
+export const LOGIN_RATE_LIMIT_MAX = positiveInteger(
+  "LOGIN_RATE_LIMIT_MAX",
+  NODE_ENV === "test" ? 1000 : 10,
+);

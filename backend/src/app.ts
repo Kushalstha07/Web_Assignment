@@ -14,9 +14,12 @@ import scholarshipRoutes from "./routes/scholarship.route";
 import notificationRoutes from "./routes/notification.route";
 import analyticsRoutes from "./routes/analytics.route";
 import { CORS_ORIGINS } from "./configs/constant";
+import { securityHeaders } from "./middlewares/security.middleware";
 
 const app: Application = express();
 
+app.disable("x-powered-by");
+app.use(securityHeaders);
 app.use(
   cors({
     origin(origin, callback) {
