@@ -15,10 +15,18 @@ export const UpdateApplicationDTO = z.object({
   documents: z.array(z.string()).optional(),
 });
 
+// Students may edit application content, but workflow decisions belong to staff.
+export const StudentUpdateApplicationDTO = UpdateApplicationDTO.pick({
+  program: true,
+  notes: true,
+  documents: true,
+}).strict();
+
 export const SubmitApplicationDTO = z.object({
   submittedDate: z.string().min(1, "Submission date is required"),
 });
 
 export type CreateApplicationDTOType = z.infer<typeof CreateApplicationDTO>;
 export type UpdateApplicationDTOType = z.infer<typeof UpdateApplicationDTO>;
+export type StudentUpdateApplicationDTOType = z.infer<typeof StudentUpdateApplicationDTO>;
 export type SubmitApplicationDTOType = z.infer<typeof SubmitApplicationDTO>;

@@ -1,7 +1,9 @@
 import request from "supertest";
 import path from "path";
 import fs from "fs";
+import jwt from "jsonwebtoken";
 import app from "../app";
+import { SECRET_KEY } from "../configs/constant";
 
 let studentToken: string;
 let adminToken: string;
@@ -28,26 +30,10 @@ beforeAll(async () => {
   });
   studentToken = studentRes.body.data.token;
 
-  // Register admin
-  await request(app).post("/api/v1/auth/register").send({
-    fullName: "Doc Admin",
-    username: "docadmin",
-    email: "docadmin@test.com",
-    phoneNumber: "1234567890",
-    studyLevel: "postgraduate",
-    destination: "usa",
-    fieldOfStudy: "Admin",
-    intake: "fall",
-    budget: "20k-35k",
-    password: "password123",
-    role: "admin",
-  });
-
-  const adminRes = await request(app).post("/api/v1/auth/login").send({
-    email: "docadmin@test.com",
-    password: "password123",
-  });
-  adminToken = adminRes.body.data.token;
+  adminToken = jwt.sign(
+    { id: "document-admin", email: "docadmin@test.com", role: "admin" },
+    SECRET_KEY,
+  );
 });
 
 describe("Document API", () => {
@@ -105,6 +91,15 @@ describe("Document API", () => {
 
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body.data)).toBe(true);
+  });
+
+  it("should not allow a student to verify a document", async () => {
+    const res = await request(app)
+      .patch(`/api/v1/documents/${documentId}/verify`)
+      .set("Authorization", `Bearer ${studentToken}`)
+      .send({ status: "verified" });
+
+    expect(res.status).toBe(403);
   });
 
   // Verify document

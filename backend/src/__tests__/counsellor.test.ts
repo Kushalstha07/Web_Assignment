@@ -1,29 +1,16 @@
 import request from "supertest";
+import jwt from "jsonwebtoken";
 import app from "../app";
+import { SECRET_KEY } from "../configs/constant";
 
 let adminToken: string;
 let counsellorId: string;
 
 beforeAll(async () => {
-  await request(app).post("/api/v1/auth/register").send({
-    fullName: "Couns Test Admin",
-    username: "counsadmin",
-    email: "counsadmin@test.com",
-    phoneNumber: "1234567890",
-    studyLevel: "postgraduate",
-    destination: "usa",
-    fieldOfStudy: "Admin",
-    intake: "fall",
-    budget: "20k-35k",
-    password: "password123",
-    role: "admin",
-  });
-
-  const adminRes = await request(app).post("/api/v1/auth/login").send({
-    email: "counsadmin@test.com",
-    password: "password123",
-  });
-  adminToken = adminRes.body.data.token;
+  adminToken = jwt.sign(
+    { id: "counsellor-admin", email: "counsadmin@test.com", role: "admin" },
+    SECRET_KEY,
+  );
 });
 
 describe("Counsellor API", () => {

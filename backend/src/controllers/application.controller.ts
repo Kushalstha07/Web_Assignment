@@ -1,7 +1,12 @@
 import { Request, Response } from "express";
 import { ApiResponseHelper } from "../uttils/apihelper.util";
 import { applicationService } from "../services/application.service";
-import { CreateApplicationDTO, UpdateApplicationDTO, SubmitApplicationDTO } from "../dtos/application.dto";
+import {
+  CreateApplicationDTO,
+  StudentUpdateApplicationDTO,
+  SubmitApplicationDTO,
+  UpdateApplicationDTO,
+} from "../dtos/application.dto";
 import { HttpException } from "../exceptions/http-exception";
 
 export class ApplicationController {
@@ -78,7 +83,8 @@ export class ApplicationController {
       const role = req.user?.role || "student";
       if (!userId) return ApiResponseHelper.error(res, "Unauthorized", 401);
 
-      const parsed = UpdateApplicationDTO.safeParse(req.body);
+      const updateSchema = role === "admin" ? UpdateApplicationDTO : StudentUpdateApplicationDTO;
+      const parsed = updateSchema.safeParse(req.body);
       if (!parsed.success) {
         const errors = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join(", ");
         return ApiResponseHelper.error(res, `Validation error: ${errors}`, 400);

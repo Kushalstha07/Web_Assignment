@@ -113,6 +113,15 @@ describe("Application API", () => {
     expect(res.body.data.status).toBe("submitted");
   });
 
+  it("should reject student workflow status changes", async () => {
+    const res = await request(app)
+      .patch(`/api/v1/applications/${applicationId}`)
+      .set("Authorization", `Bearer ${studentToken}`)
+      .send({ status: "accepted", stage: "decision-made" });
+
+    expect(res.status).toBe(400);
+  });
+
   // Update application
   it("should update an application", async () => {
     const res = await request(app)
