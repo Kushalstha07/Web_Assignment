@@ -59,7 +59,7 @@ const testimonials = [
     subtitle: "Stanford University '26 · MS",
     university: "Stanford University",
     quote:
-      "The AI matching tool was spot-on. It identified universities that aligned perfectly with my research interests, and the acceptance probability predictions were accurate.",
+      "The matching tool identified universities that aligned with my research interests, and the comparison details helped me narrow down my options.",
   },
   {
     variant: "white" as const,

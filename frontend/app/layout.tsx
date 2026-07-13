@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     default: "Edu Global",
     template: "%s | Edu Global",
   },
-  description: "An AI-powered education consultancy platform.",
+  description: "Education consultancy support for studying abroad.",
 };
 
 export default function RootLayout({

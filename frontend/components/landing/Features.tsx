@@ -66,9 +66,9 @@ export default function Features() {
           <circle cx="12" cy="12" r="3" fill="currentColor" />
         </svg>
       ),
-      title: "AI Recommendation",
+      title: "Personalized Recommendations",
       description:
-        "Receive machine-curated insights, course selection, and career pathways tailored to your unique profile.",
+        "Review university and course suggestions ranked from your saved academic profile and preferences.",
       variant: "blue" as const,
     },
     {
@@ -166,8 +166,8 @@ export default function Features() {
             Global Success
           </h2>
           <p className="mt-4 text-lg leading-relaxed text-slate-500">
-            We&apos;ve built a suite of AI-powered tools designed to take the
-            guesswork out of your university search and application process.
+            Use practical tools and expert support to simplify your university
+            search and application process.
           </p>
         </div>
 

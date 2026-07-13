@@ -166,7 +166,7 @@ export default function ComparePage() {
         </div>
       ) : (
         <>
-          {/* AI Expert Insight Panel */}
+          {/* Comparison summary */}
           {universities.length >= 2 && (
             <Card padding="md" className="border border-[#7C3AED]/20 bg-gradient-to-r from-[#7C3AED]/5 to-[#2563EB]/5">
               <CardContent className="p-0">
@@ -175,13 +175,11 @@ export default function ComparePage() {
                     <Sparkles className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-[#0F172A]">AI Expert Insight</h3>
+                    <h3 className="text-sm font-bold text-[#0F172A]">Comparison Summary</h3>
                     <p className="mt-1 text-sm text-[#64748B]">
-                      Based on your academic profile,{" "}
-                      <strong className="text-[#2563EB]">{universities[0]?.name}</strong> offers the best
-                      overall match with higher ranking and program variety.{" "}
-                      <strong className="text-[#7C3AED]">{universities[1]?.name}</strong> is more
-                      budget-friendly while still maintaining strong academic standards.
+                      Compare <strong className="text-[#2563EB]">{universities[0]?.name}</strong> and{" "}
+                      <strong className="text-[#7C3AED]">{universities[1]?.name}</strong> using the
+                      rankings, programs, tuition fees, and locations listed below.
                     </p>
                   </div>
                 </div>

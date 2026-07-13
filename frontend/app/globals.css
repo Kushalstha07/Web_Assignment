@@ -4,7 +4,7 @@
   /* Primary Colors */
   --primary: #2563EB;
   --primary-dark: #1D4ED8;
-  --ai-accent: #7C3AED;
+  --accent-purple: #7C3AED;
 
   /* Background & Surface */
   --background: #F8FAFC;
@@ -56,7 +56,7 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
-  --color-ai-accent: var(--ai-accent);
+  --color-accent-purple: var(--accent-purple);
   --font-sans: Arial, Helvetica, sans-serif;
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
