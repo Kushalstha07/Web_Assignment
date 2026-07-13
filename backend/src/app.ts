@@ -13,6 +13,7 @@ import messageRoutes from "./routes/message.route";
 import scholarshipRoutes from "./routes/scholarship.route";
 import notificationRoutes from "./routes/notification.route";
 import analyticsRoutes from "./routes/analytics.route";
+import visaRoutes from "./routes/visa.route";
 import { CORS_ORIGINS } from "./configs/constant";
 import { securityHeaders } from "./middlewares/security.middleware";
 
@@ -60,6 +61,7 @@ app.use("/api/v1/messages", messageRoutes);
 app.use("/api/v1/scholarships", scholarshipRoutes);
 app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/analytics", analyticsRoutes);
+app.use("/api/v1/visa", visaRoutes);
 
 app.use((req: Request, res: Response) => {
   return res.status(404).json({

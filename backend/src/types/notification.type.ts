@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const notificationTypes = ["info", "success", "warning", "error"] as const;
-export const notificationCategories = ["application", "document", "appointment", "message", "scholarship", "system"] as const;
+export const notificationCategories = ["application", "document", "appointment", "message", "scholarship", "visa", "system"] as const;
 
 export const NotificationSchema = z.object({
   userId: z.string().min(1, "User ID is required"),
