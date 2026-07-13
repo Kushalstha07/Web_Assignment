@@ -5,6 +5,8 @@ import { HttpException } from "../exceptions/http-exception";
 import { IDocument } from "../models/document.model";
 import { unlink } from "fs/promises";
 import path from "path";
+import { access } from "fs/promises";
+import { DOCUMENT_UPLOAD_DIRECTORY } from "../configs/storage";
 
 const docRepo = new DocumentMongoRepository();
 
@@ -36,7 +38,7 @@ function toSafeDocument(d: IDocument): SafeDocument {
     size: d.size,
     category: d.category,
     status: d.status,
-    url: d.url,
+    url: `/api/v1/documents/${d._id.toString()}/download`,
     notes: d.notes,
     verifiedBy: d.verifiedBy,
     verifiedAt: d.verifiedAt,
@@ -55,7 +57,7 @@ export class DocumentService {
       size: file.size,
       category: data.category,
       status: "pending",
-      url: `/uploads/${file.filename}`,
+      url: "private",
       notes: data.notes,
     };
     const created = await docRepo.create(docData);
@@ -69,6 +71,34 @@ export class DocumentService {
       throw new HttpException(403, "You can only access your own documents");
     }
     return toSafeDocument(doc);
+  }
+
+  async getDownload(
+    id: string,
+    userId: string,
+    role: string,
+  ): Promise<{ path: string; mimeType: string; originalName: string }> {
+    const doc = await docRepo.getById(id);
+    if (!doc) throw new HttpException(404, "Document not found");
+    if (role !== "admin" && doc.userId !== userId) {
+      throw new HttpException(403, "You can only download your own documents");
+    }
+
+    const filePath = path.join(
+      DOCUMENT_UPLOAD_DIRECTORY,
+      path.basename(doc.fileName),
+    );
+    try {
+      await access(filePath);
+    } catch {
+      throw new HttpException(404, "Stored document file not found");
+    }
+
+    return {
+      path: filePath,
+      mimeType: doc.mimeType,
+      originalName: path.basename(doc.originalName),
+    };
   }
 
   async getMyDocuments(userId: string): Promise<SafeDocument[]> {
@@ -107,7 +137,9 @@ export class DocumentService {
     }
     const deleted = await docRepo.delete(id);
     if (deleted) {
-      await unlink(path.join(__dirname, "../../public/uploads", doc.fileName)).catch(() => undefined);
+      await unlink(
+        path.join(DOCUMENT_UPLOAD_DIRECTORY, path.basename(doc.fileName)),
+      ).catch(() => undefined);
     }
     return deleted;
   }

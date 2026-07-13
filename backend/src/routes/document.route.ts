@@ -10,6 +10,7 @@ router.post("/upload", authenticate, documentUpload.single("document"), controll
 router.get("/", authenticate, controller.getMyDocuments.bind(controller));
 router.get("/all", authenticate, authorize("admin"), controller.getAll.bind(controller));
 router.get("/:id", authenticate, controller.getById.bind(controller));
+router.get("/:id/download", authenticate, controller.download.bind(controller));
 router.patch("/:id/verify", authenticate, authorize("admin"), controller.verify.bind(controller));
 router.delete("/:id", authenticate, controller.delete.bind(controller));
 

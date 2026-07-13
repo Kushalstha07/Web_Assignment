@@ -4,10 +4,13 @@ import fs from "fs";
 import jwt from "jsonwebtoken";
 import app from "../app";
 import { SECRET_KEY } from "../configs/constant";
+import { DOCUMENT_UPLOAD_DIRECTORY } from "../configs/storage";
 
 let studentToken: string;
 let adminToken: string;
+let otherStudentToken: string;
 let documentId: string;
+let documentFileName: string;
 
 beforeAll(async () => {
   // Register student
@@ -32,6 +35,10 @@ beforeAll(async () => {
 
   adminToken = jwt.sign(
     { id: "document-admin", email: "docadmin@test.com", role: "admin" },
+    SECRET_KEY,
+  );
+  otherStudentToken = jwt.sign(
+    { id: "other-document-student", email: "other-doc@test.com", role: "student" },
     SECRET_KEY,
   );
 });
@@ -61,6 +68,9 @@ describe("Document API", () => {
     expect(res.body.data.category).toBe("transcript");
     expect(res.body.data.status).toBe("pending");
     documentId = res.body.data.id;
+    documentFileName = res.body.data.fileName;
+    expect(res.body.data.url).toBe(`/api/v1/documents/${documentId}/download`);
+    expect(fs.existsSync(path.join(DOCUMENT_UPLOAD_DIRECTORY, documentFileName))).toBe(true);
   });
 
   // Validation error
@@ -102,6 +112,38 @@ describe("Document API", () => {
     expect(res.status).toBe(403);
   });
 
+  it("should download a document for its owner", async () => {
+    const res = await request(app)
+      .get(`/api/v1/documents/${documentId}/download`)
+      .set("Authorization", `Bearer ${studentToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.headers["content-disposition"]).toContain("attachment");
+    expect(res.text).toBe("Test document content");
+  });
+
+  it("should reject unauthenticated document downloads", async () => {
+    const res = await request(app).get(`/api/v1/documents/${documentId}/download`);
+    expect(res.status).toBe(401);
+  });
+
+  it("should reject document downloads by another student", async () => {
+    const res = await request(app)
+      .get(`/api/v1/documents/${documentId}/download`)
+      .set("Authorization", `Bearer ${otherStudentToken}`);
+
+    expect(res.status).toBe(403);
+  });
+
+  it("should allow an admin to download a document", async () => {
+    const res = await request(app)
+      .get(`/api/v1/documents/${documentId}/download`)
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.text).toBe("Test document content");
+  });
+
   // Verify document
   it("should verify a document as admin", async () => {
     const res = await request(app)
@@ -121,5 +163,6 @@ describe("Document API", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
+    expect(fs.existsSync(path.join(DOCUMENT_UPLOAD_DIRECTORY, documentFileName))).toBe(false);
   });
 });

@@ -1,9 +1,17 @@
 import multer from "multer";
+import fs from "fs";
 import path from "path";
+import {
+  DOCUMENT_UPLOAD_DIRECTORY,
+  PROFILE_UPLOAD_DIRECTORY,
+} from "../configs/storage";
 
-const storage = multer.diskStorage({
+fs.mkdirSync(PROFILE_UPLOAD_DIRECTORY, { recursive: true });
+fs.mkdirSync(DOCUMENT_UPLOAD_DIRECTORY, { recursive: true });
+
+const profileStorage = multer.diskStorage({
   destination: (_req, _file, cb) => {
-    cb(null, path.join(__dirname, "../../public/uploads"));
+    cb(null, PROFILE_UPLOAD_DIRECTORY);
   },
   filename: (_req, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
@@ -27,10 +35,21 @@ const fileFilter = (
 };
 
 export const upload = multer({
-  storage,
+  storage: profileStorage,
   fileFilter,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB
+  },
+});
+
+const documentStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, DOCUMENT_UPLOAD_DIRECTORY);
+  },
+  filename: (_req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `document-${uniqueSuffix}${ext}`);
   },
 });
 
@@ -54,7 +73,7 @@ const documentFileFilter = (
 };
 
 export const documentUpload = multer({
-  storage,
+  storage: documentStorage,
   fileFilter: documentFileFilter,
   limits: { fileSize: 10 * 1024 * 1024 },
 });
