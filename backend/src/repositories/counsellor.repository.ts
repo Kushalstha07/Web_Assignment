@@ -52,7 +52,7 @@ export class CounsellorMongoRepository implements ICounsellorRepository {
   }
 
   async update(id: string, data: UpdateCounsellorDTOType): Promise<ICounsellor | null> {
-    const updated = await CounsellorModel.findByIdAndUpdate(id, { $set: data }, { new: true });
+    const updated = await CounsellorModel.findByIdAndUpdate(id, { $set: data }, { returnDocument: "after" });
     return updated ? (updated.toObject() as ICounsellor) : null;
   }
 

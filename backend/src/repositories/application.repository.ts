@@ -52,7 +52,7 @@ export class ApplicationMongoRepository implements IApplicationRepository {
   }
 
   async update(id: string, data: UpdateApplicationDTOType): Promise<IApplication | null> {
-    const updated = await ApplicationModel.findByIdAndUpdate(id, { $set: data }, { new: true });
+    const updated = await ApplicationModel.findByIdAndUpdate(id, { $set: data }, { returnDocument: "after" });
     return updated ? (updated.toObject() as IApplication) : null;
   }
 

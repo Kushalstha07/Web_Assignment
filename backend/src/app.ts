@@ -1,6 +1,5 @@
 import express, { Application, NextFunction, Request, Response } from "express";
 import cors from "cors";
-import path from "path";
 import userRoutes from "./routes/user.route";
 import adminRoutes from "./routes/admin.route";
 import academicProfileRoutes from "./routes/academic-profile.route";
@@ -16,6 +15,7 @@ import analyticsRoutes from "./routes/analytics.route";
 import visaRoutes from "./routes/visa.route";
 import { CORS_ORIGINS } from "./configs/constant";
 import { securityHeaders } from "./middlewares/security.middleware";
+import { PROFILE_UPLOAD_DIRECTORY } from "./configs/storage";
 
 const app: Application = express();
 
@@ -40,7 +40,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serve uploaded files statically
-app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")));
+app.use("/uploads", express.static(PROFILE_UPLOAD_DIRECTORY));
 
 app.get("/", (req: Request, res: Response) => {
   return res.status(200).json({
