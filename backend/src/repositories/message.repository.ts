@@ -42,8 +42,10 @@ export class MessageMongoRepository implements IMessageRepository {
   }
 
   async markAsRead(messageIds: string[], userId: string): Promise<void> {
+    const conversations = await ConversationModel.find({ participants: userId }).select("_id");
+    const conversationIds = conversations.map((conversation) => conversation._id.toString());
     await MessageModel.updateMany(
-      { _id: { $in: messageIds }, senderId: { $ne: userId } },
+      { _id: { $in: messageIds }, conversationId: { $in: conversationIds }, senderId: { $ne: userId } },
       { $set: { status: "read" } },
     );
   }

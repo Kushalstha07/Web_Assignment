@@ -7,6 +7,7 @@ export interface IUserRepository {
   // 5 common mandatory methods for a repository
   createUser(user: Partial<IUser>): Promise<IUser>;
   getUserById(id: string): Promise<IUser | null>;
+  getUsersByIds(ids: string[]): Promise<IUser[]>;
   getAll(): Promise<IUser[]>;
   update(id: string, user: Partial<IUser>): Promise<IUser | null>;
   delete(id: string): Promise<boolean>;
@@ -23,6 +24,10 @@ export class UserMongoRepository implements IUserRepository {
   async getUserById(id: string): Promise<IUser | null> {
     const found = await UserModel.findOne({ _id: id });
     return found;
+  }
+
+  async getUsersByIds(ids: string[]): Promise<IUser[]> {
+    return UserModel.find({ _id: { $in: ids } });
   }
 
   async getUserByEmail(email: string): Promise<IUser | null> {
