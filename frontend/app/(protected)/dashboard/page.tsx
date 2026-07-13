@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { SkeletonCard, SkeletonTable } from "@/components/ui/Skeleton";
 import { getUsers } from "@/lib/api/admin.api";
 import { getAnalyticsTotals, getMonthlyGrowth, getSuccessRate, type AnalyticsTotals, type MonthlyGrowth, type SuccessRate } from "@/lib/api/analytics.api";
-import { getAllApplications, getMyApplications, type Application } from "@/lib/api/application.api";
+import { getAllApplications, getAssignedApplications, getMyApplications, type Application } from "@/lib/api/application.api";
 import { getMyAppointments, type Appointment } from "@/lib/api/appointment.api";
 import { getMyDocuments, type Document } from "@/lib/api/document.api";
 import { getScholarships, type Scholarship } from "@/lib/api/scholarship.api";
@@ -25,7 +25,43 @@ export default function DashboardPage() {
   useEffect(() => { if (!loading && !user) router.push("/login"); }, [loading, user, router]);
   if (loading) return <div className="space-y-6"><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[1,2,3,4].map((item) => <SkeletonCard key={item}/>)}</div><SkeletonTable/></div>;
   if (!user) return null;
-  return user.role === "admin" ? <AdminDashboard/> : <StudentDashboard/>;
+  return user.role === "admin" ? <AdminDashboard/> : user.role === "counsellor" ? <CounsellorDashboard/> : <StudentDashboard/>;
+}
+
+function CounsellorDashboard() {
+  const { user } = useAuth();
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [universities, setUniversities] = useState<University[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void Promise.all([getAssignedApplications(), getMyAppointments(), getUniversities({ limit: 100 })])
+        .then(([applicationResult, appointmentResult, universityResult]) => {
+          setApplications(applicationResult.data || []);
+          setAppointments(appointmentResult.data || []);
+          setUniversities(universityResult.data || []);
+        })
+        .catch((cause) => setError(cause instanceof Error ? cause.message : "Unable to load counsellor dashboard"))
+        .finally(() => setLoading(false));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const universityNames = useMemo(() => new Map(universities.map((item) => [item.id, item.name])), [universities]);
+  if (loading) return <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[1,2,3,4].map((item) => <SkeletonCard key={item}/>)}</div>;
+  const students = new Set(applications.map((application) => application.studentId)).size;
+  const active = applications.filter((application) => !["accepted", "rejected", "withdrawn"].includes(application.status)).length;
+  const upcoming = appointments.filter((appointment) => appointment.status !== "cancelled" && new Date(`${appointment.date.slice(0, 10)}T${appointment.startTime}:00`) >= new Date()).length;
+
+  return <div className="space-y-6">
+    <div><h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">Welcome, {user?.fullName?.split(" ")[0]}</h1><p className="mt-1 text-sm text-[#64748B]">Your assigned students, application cases, and counselling schedule.</p></div>
+    {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Metric title="Assigned students" value={students} detail="Unique active relationships" icon={Users} color="text-[#2563EB]" bg="bg-[#EEF5FF]"/><Metric title="Application cases" value={applications.length} detail={`${active} currently active`} icon={FileText} color="text-[#7C3AED]" bg="bg-purple-50"/><Metric title="Upcoming meetings" value={upcoming} detail={`${appointments.length} total appointments`} icon={Calendar} color="text-[#F59E0B]" bg="bg-[#FFF9EE]"/><Metric title="Decisions made" value={applications.filter((application) => application.stage === "decision-made").length} detail="Completed decisions" icon={CheckCircle} color="text-[#22C55E]" bg="bg-[#F0FDF4]"/></div>
+    <Card><div className="mb-4 flex items-center justify-between"><h2 className="font-bold">Assigned applications</h2><Link href="/applications" className="text-sm font-semibold text-[#2563EB]">Manage cases</Link></div><div className="space-y-3">{applications.slice(0, 6).map((application) => <div key={application.id} className="flex flex-col gap-3 rounded-xl border border-[#E7EDF6] p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-semibold">{application.studentName || "Assigned student"}</p><p className="text-sm text-[#64748B]">{universityNames.get(application.universityId) || "Unknown university"} · {application.program}</p></div><Badge variant={application.status === "accepted" ? "success" : application.status === "rejected" ? "danger" : "warning"}>{application.status}</Badge></div>)}{!applications.length && <Empty text="No applications are assigned to you yet."/>}</div></Card>
+  </div>;
 }
 
 function AdminDashboard() {

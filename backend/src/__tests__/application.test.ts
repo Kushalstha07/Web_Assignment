@@ -128,6 +128,17 @@ describe("Application API", () => {
     expect(res.body.data[0].studentName).toBe("Test Student");
   });
 
+  it("should return only assigned student records to a counsellor", async () => {
+    const res = await request(app)
+      .get("/api/v1/counsellors/me/students")
+      .set("Authorization", `Bearer ${counsellorToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].fullName).toBe("Test Student");
+    expect(res.body.data[0].password).toBeUndefined();
+  });
+
   it("should let an assigned counsellor update workflow stage", async () => {
     const res = await request(app)
       .patch(`/api/v1/applications/${applicationId}`)

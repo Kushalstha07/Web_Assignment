@@ -47,6 +47,24 @@ export class CounsellorController {
     }
   }
 
+  async getMyStudents(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) return ApiResponseHelper.error(res, "Unauthorized", 401);
+      const students = await counsellorService.getAssignedStudents(
+        userId,
+        req.query.search as string | undefined,
+      );
+      return ApiResponseHelper.success(res, students, "Assigned students fetched");
+    } catch (error) {
+      if (error instanceof HttpException) {
+        return ApiResponseHelper.error(res, error.message, error.status);
+      }
+      const message = error instanceof Error ? error.message : "Something went wrong";
+      return ApiResponseHelper.error(res, message, 500);
+    }
+  }
+
   async getAll(req: Request, res: Response) {
     try {
       const available = req.query.available === "true" ? true : req.query.available === "false" ? false : undefined;

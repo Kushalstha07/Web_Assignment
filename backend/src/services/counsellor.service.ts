@@ -3,6 +3,8 @@ import { CounsellorType } from "../types/counsellor.type";
 import { CreateCounsellorDTOType, UpdateCounsellorDTOType } from "../dtos/counsellor.dto";
 import { HttpException } from "../exceptions/http-exception";
 import { ICounsellor } from "../models/counsellor.model";
+import { ApplicationModel } from "../models/application.model";
+import { UserModel } from "../models/user.model";
 
 const counsellorRepo = new CounsellorMongoRepository();
 
@@ -20,6 +22,23 @@ export type SafeCounsellor = {
   hourlyRate: number;
   available: boolean;
   imageUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AssignedStudent = {
+  id: string;
+  fullName: string;
+  username: string;
+  email: string;
+  phoneNumber: string;
+  studyLevel: string;
+  destination: string;
+  fieldOfStudy: string;
+  intake: string;
+  budget: string;
+  role: "student";
+  profileImage: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -68,6 +87,41 @@ export class CounsellorService {
   async getAll(available?: boolean, specialty?: string): Promise<SafeCounsellor[]> {
     const cs = await counsellorRepo.getAll(available, specialty);
     return cs.map(toSafeCounsellor);
+  }
+
+  async getAssignedStudents(
+    userId: string,
+    search?: string,
+  ): Promise<AssignedStudent[]> {
+    const counsellor = await counsellorRepo.getByUserId(userId);
+    if (!counsellor) throw new HttpException(404, "Counsellor profile not found");
+    const studentIds = await ApplicationModel.distinct("studentId", {
+      counsellorId: counsellor._id.toString(),
+    });
+    const filter: Record<string, unknown> = { _id: { $in: studentIds }, role: "student" };
+    if (search) {
+      filter.$or = [
+        { fullName: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+      ];
+    }
+    const students = await UserModel.find(filter).sort({ fullName: 1 });
+    return students.map((student) => ({
+      id: student._id.toString(),
+      fullName: student.fullName,
+      username: student.username,
+      email: student.email,
+      phoneNumber: student.phoneNumber,
+      studyLevel: student.studyLevel,
+      destination: student.destination,
+      fieldOfStudy: student.fieldOfStudy,
+      intake: student.intake,
+      budget: student.budget,
+      role: "student",
+      profileImage: student.profileImage || null,
+      createdAt: student.createdAt.toISOString(),
+      updatedAt: student.updatedAt.toISOString(),
+    }));
   }
 
   async getAllPaginated(page: number, limit: number, search?: string): Promise<{ data: SafeCounsellor[]; total: number }> {

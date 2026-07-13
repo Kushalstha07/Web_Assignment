@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { AdminGuard } from "@/components/auth/AdminGuard";
+import { RoleGuard } from "@/components/auth/RoleGuard";
 import { getUsers } from "@/lib/api/admin.api";
+import { getAssignedStudents } from "@/lib/api/counsellor.api";
 import type { AdminUser } from "@/lib/api/types";
 import { SkeletonTable } from "@/components/ui/Skeleton";
 import { Search } from "lucide-react";
@@ -23,7 +24,10 @@ export default function StudentsPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await getUsers(1, 100, search || undefined);
+      if (!user) return;
+      const response = user.role === "counsellor"
+        ? await getAssignedStudents(search || undefined)
+        : await getUsers(1, 100, search || undefined);
       if (response.success) {
         setUsers(response.data);
       } else {
@@ -34,7 +38,7 @@ export default function StudentsPage() {
     } finally {
       setLoading(false);
     }
-  }, [search]);
+  }, [search, user]);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -68,11 +72,11 @@ export default function StudentsPage() {
   const students = users.filter(u => u.role === "student");
 
   return (
-    <AdminGuard>
+    <RoleGuard roles={["admin", "counsellor"]}>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-[#0F172A]">Students</h1>
-          <p className="mt-1 text-sm text-[#64748B]">Manage and track all student applications</p>
+          <p className="mt-1 text-sm text-[#64748B]">{user.role === "counsellor" ? "Students assigned through your application cases" : "Manage and track all student applications"}</p>
         </div>
 
         {/* Stats Cards */}
@@ -88,14 +92,14 @@ export default function StudentsPage() {
             <p className="mt-1 text-xs text-[#22C55E]">Student accounts</p>
           </div>
           <div className="rounded-[20px] border border-[#E5E7EB] bg-white p-6 shadow-sm">
-            <p className="text-sm font-medium text-[#64748B]">Admins</p>
-            <p className="mt-2 text-2xl font-bold text-[#0F172A]">{users.filter(u => u.role === "admin").length}</p>
-            <p className="mt-1 text-xs text-[#64748B]">Admin accounts</p>
+            <p className="text-sm font-medium text-[#64748B]">Destinations</p>
+            <p className="mt-2 text-2xl font-bold text-[#0F172A]">{new Set(students.map((student) => student.destination)).size}</p>
+            <p className="mt-1 text-xs text-[#64748B]">Represented in this view</p>
           </div>
           <div className="rounded-[20px] border border-[#E5E7EB] bg-white p-6 shadow-sm">
-            <p className="text-sm font-medium text-[#64748B]">Total Users</p>
-            <p className="mt-2 text-2xl font-bold text-[#0F172A]">{users.length}</p>
-            <p className="mt-1 text-xs text-[#64748B]">Loaded in view</p>
+            <p className="text-sm font-medium text-[#64748B]">Study Fields</p>
+            <p className="mt-2 text-2xl font-bold text-[#0F172A]">{new Set(students.map((student) => student.fieldOfStudy)).size}</p>
+            <p className="mt-1 text-xs text-[#64748B]">Represented in this view</p>
           </div>
         </div>
 
@@ -201,19 +205,19 @@ export default function StudentsPage() {
                 <p className="text-sm text-[#64748B]">
                   Showing {students.length} student accounts
                 </p>
-                <div className="flex gap-2">
+                {user.role === "admin" && <div className="flex gap-2">
                   <a
                     href="/admin/users"
                     className="rounded-[12px] bg-[#2563EB] px-5 py-2 text-sm font-semibold text-white hover:bg-[#1D4ED8] transition-all"
                   >
                     Manage All Users
                   </a>
-                </div>
+                </div>}
               </div>
             </div>
           </div>
         )}
       </div>
-    </AdminGuard>
+    </RoleGuard>
   );
 }
