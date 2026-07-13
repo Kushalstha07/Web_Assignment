@@ -90,12 +90,24 @@ describe("Academic Profile API", () => {
         .set("Authorization", `Bearer ${onboardingToken}`);
       expect(premature.status).toBe(400);
 
+      const invalidScore = await request(app)
+        .put("/api/v1/academic-profile/step-2")
+        .set("Authorization", `Bearer ${onboardingToken}`)
+        .send({ testType: "IELTS", testScore: 10 });
+      expect(invalidScore.status).toBe(400);
+
       const step2 = await request(app)
         .put("/api/v1/academic-profile/step-2")
         .set("Authorization", `Bearer ${onboardingToken}`)
-        .send({ gpa: 3.7, testType: "IELTS", testScore: 8 });
+        .send({ gpa: 3.7, testType: "GRE", testScore: 320 });
       expect(step2.status).toBe(200);
       expect(step2.body.data.onboardingStep).toBe(3);
+
+      const invalidPreferences = await request(app)
+        .put("/api/v1/academic-profile/step-3")
+        .set("Authorization", `Bearer ${onboardingToken}`)
+        .send({ preferredCountries: [], tuitionBudget: "unknown" });
+      expect(invalidPreferences.status).toBe(400);
 
       const step3 = await request(app)
         .put("/api/v1/academic-profile/step-3")

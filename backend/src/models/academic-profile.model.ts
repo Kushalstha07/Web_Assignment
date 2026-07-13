@@ -51,7 +51,7 @@ const AcademicProfileMongoSchema: Schema<IAcademicProfile> = new Schema(
     testScore: {
       type: Number,
       min: 0,
-      max: 120,
+      max: 800,
     },
     preferredCountries: {
       type: [String],

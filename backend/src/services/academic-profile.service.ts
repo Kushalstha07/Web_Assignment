@@ -129,6 +129,7 @@ export class AcademicProfileService {
   async completeOnboarding(userId: string): Promise<SafeAcademicProfile> {
     const existing = await profileRepo.getByUserId(userId);
     if (!existing) throw new HttpException(404, "Please complete Step 1 first");
+    if (existing.onboardingCompletedAt) return toSafeProfile(existing);
     if ((existing.onboardingStep || 1) < 4) {
       throw new HttpException(400, "Please complete all onboarding steps before submitting");
     }

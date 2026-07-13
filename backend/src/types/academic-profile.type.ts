@@ -20,7 +20,7 @@ export const AcademicProfileSchema = z.object({
   gpa: z.number().min(0).max(4.0, "GPA must be between 0 and 4.0").optional(),
   fieldOfStudy: z.string().min(1, "Field of study is required"),
   testType: z.enum(testTypes).optional(),
-  testScore: z.number().min(0).max(120, "Invalid test score").optional(),
+  testScore: z.number().min(0).max(800, "Invalid test score").optional(),
   preferredCountries: z.array(z.string()).optional(),
   tuitionBudget: z.string().optional(),
   bio: z.string().max(500, "Bio must be under 500 characters").optional(),
