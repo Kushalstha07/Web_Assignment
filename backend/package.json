@@ -7,7 +7,9 @@
     "start": "node dist/index.js",
     "build": "tsc",
     "seed": "tsx src/database/seed.ts",
-    "test": "jest --verbose --detectOpenHandles"
+    "test": "jest --verbose --detectOpenHandles",
+    "test:ci": "jest --runInBand --silent",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [
     "edu-global",

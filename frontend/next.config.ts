@@ -1,27 +1,20 @@
 import type { NextConfig } from "next";
 
+const apiUrl = (process.env.API_URL || "http://localhost:4000").replace(/\/$/, "");
+
 const nextConfig: NextConfig = {
+  output: "standalone",
   async rewrites() {
     return [
       {
         source: "/api/v1/:path*",
-        destination: "http://localhost:4000/api/v1/:path*",
+        destination: `${apiUrl}/api/v1/:path*`,
       },
       {
         source: "/uploads/:path*",
-        destination: "http://localhost:4000/uploads/:path*",
+        destination: `${apiUrl}/uploads/:path*`,
       },
     ];
-  },
-  images: {
-    remotePatterns: [
-      {
-        protocol: "http",
-        hostname: "localhost",
-        port: "4000",
-        pathname: "/uploads/**",
-      },
-    ],
   },
 };
 

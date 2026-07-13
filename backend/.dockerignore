@@ -1,0 +1,7 @@
+node_modules
+dist
+coverage
+.env*
+private
+public/uploads
+npm-debug.log*
