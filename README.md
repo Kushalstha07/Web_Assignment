@@ -1,76 +1,89 @@
 # EduGlobal
 
-EduGlobal is a full-stack education consultancy platform for students, counsellors, and administrators. The repository contains a Next.js frontend and an Express/MongoDB API.
+EduGlobal is a full-stack education consultancy platform for students, counsellors, and administrators. It combines a Next.js portal with an Express/MongoDB API and supports the complete journey from academic onboarding through applications and visa processing.
 
-## Requirements
+## What is included
 
-- Node.js 20 or newer
-- npm
-- MongoDB running locally or an accessible MongoDB connection string
+- Student onboarding, profile strength, university catalogue, explainable recommendations, applications, documents, appointments, messages, notifications, and visa tracking
+- Counsellor workspace for assigned students, applications, appointments, messages, and visa cases
+- Administrator workspaces for users, counsellors, universities, scholarships, applications, document verification, analytics, appointments, visa cases, and reporting
+- HTTP-only cookie sessions, role and record-level authorization, rate-limited authentication, hashed single-use password resets, private document storage, and security headers
+- 114 backend integration tests, frontend lint/type/build gates, GitHub Actions CI, Docker images, health checks, and Compose deployment
 
-## Local setup
+## Quick start
 
-Create local environment files from the committed templates:
+Requirements: Node.js 22, npm, and MongoDB.
 
 ```bash
 cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env.local
+
+cd backend && npm ci
+cd ../frontend && npm ci
 ```
 
-Replace `SECRET_KEY` with a long random value and configure `MONGODB_URL` for your development database.
-
-Install dependencies in each application:
-
-```bash
-cd backend
-npm install
-
-cd ../frontend
-npm install
-```
-
-Start the API in one terminal:
+Replace `SECRET_KEY` in `backend/.env` with a random value of at least 32 characters and configure MongoDB. Then run the applications in separate terminals:
 
 ```bash
 cd backend
 npm run dev
 ```
-
-Start the frontend in another terminal:
 
 ```bash
 cd frontend
 npm run dev
 ```
 
-The frontend runs at `http://localhost:3000` and proxies API requests to the backend at `http://localhost:4000`.
+The portal is available at `http://localhost:3000`; the API and health endpoint are at `http://localhost:4000`.
 
-## Verification
+## Docker Compose
+
+Docker Desktop or another Docker engine must be running.
+
+```bash
+cp .env.example .env
+# Replace SECRET_KEY and SMTP placeholders in .env
+docker compose up --build -d
+docker compose ps
+```
+
+Compose starts the frontend, backend, and MongoDB with persistent volumes for database data, public profile images, and private documents. Never use the example secrets in a deployed environment.
+
+## Quality checks
 
 ```bash
 cd backend
-npm run build
-npm test -- --runInBand
+npm run typecheck
+npm run test:ci
 
 cd ../frontend
 npm run lint
+npm run typecheck
 npm run build
 ```
 
-## Seed data
+GitHub Actions runs the same checks for every push and pull request.
 
-With the backend environment configured, development data can be loaded with:
+## Seed data
 
 ```bash
 cd backend
 npm run seed
 ```
 
-The seed command replaces records in the configured database. Do not run it against production data.
+The seed command replaces records in the configured database. Never run it against production data.
+
+## Documentation
+
+- [Architecture and access model](docs/ARCHITECTURE.md)
+- [Operations and deployment](docs/OPERATIONS.md)
+- [API overview](docs/API.md)
 
 ## Repository layout
 
-- `backend/` — Express REST API, Mongoose models, services, repositories, and integration tests
-- `frontend/` — Next.js App Router application and typed API clients
+- `backend/` — Express API, MongoDB models, services, repositories, private file handling, and integration tests
+- `frontend/` — Next.js App Router portal and typed API clients
+- `.github/workflows/ci.yml` — continuous integration gates
+- `docker-compose.yml` — frontend, backend, MongoDB, health checks, and persistent volumes
 
-More detailed architecture, endpoint, deployment, and role documentation will be added as the hardening work progresses.
+Environment files, uploads, generated builds, coverage reports, and dependencies are ignored by Git. If a secret is ever committed or exposed, rotate it rather than only deleting the file.
