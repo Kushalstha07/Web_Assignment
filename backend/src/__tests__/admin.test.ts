@@ -55,6 +55,28 @@ describe("Admin user management API", () => {
     expect(await bcryptjs.compare(baseUser.password, stored!.password)).toBe(true);
   });
 
+  it("creates admin accounts without student profile fields", async () => {
+    const response = await request(app)
+      .post("/api/v1/admin/users")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        fullName: "Operations Admin",
+        username: "operations-admin",
+        email: "operations-admin@test.com",
+        phoneNumber: "9800000052",
+        password: "password123",
+        role: "admin",
+      });
+
+    expect(response.status).toBe(201);
+    expect(response.body.data.role).toBe("admin");
+    expect(response.body.data.studyLevel).toBeUndefined();
+    expect(response.body.data.destination).toBeUndefined();
+    expect(response.body.data.fieldOfStudy).toBeUndefined();
+    expect(response.body.data.intake).toBeUndefined();
+    expect(response.body.data.budget).toBeUndefined();
+  });
+
   it("validates input and enforces email and username uniqueness", async () => {
     expect((await request(app)
       .post("/api/v1/admin/users")

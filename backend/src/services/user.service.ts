@@ -18,11 +18,11 @@ export type SafeUser = {
   username: string;
   email: string;
   phoneNumber: string;
-  studyLevel: string;
-  destination: string;
-  fieldOfStudy: string;
-  intake: string;
-  budget: string;
+  studyLevel?: string;
+  destination?: string;
+  fieldOfStudy?: string;
+  intake?: string;
+  budget?: string;
   role: string;
   profileImage: string | null;
   createdAt: string;

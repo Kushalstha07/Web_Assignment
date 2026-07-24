@@ -26,6 +26,23 @@ export interface UniversityRecommendation extends University {
   reasons: string[];
 }
 
+export interface CreateUniversityPayload {
+  name: string;
+  country: string;
+  city: string;
+  ranking: string;
+  worldRanking?: number;
+  courseType: string;
+  tuitionFee: number;
+  budgetRange: string;
+  applicationFee?: number;
+  description?: string;
+  programs?: string[];
+  rating?: number;
+  imageUrl?: string;
+  isActive?: boolean;
+}
+
 export interface UniversityListResponse {
   success: boolean;
   message: string;
@@ -69,4 +86,8 @@ export async function getUniversitiesByCountry(country: string): Promise<{ succe
 
 export async function getUniversityRecommendations(limit = 9): Promise<{ success: boolean; message: string; data: UniversityRecommendation[] }> {
   return apiClient("GET", "/api/v1/universities/recommendations", { params: { limit: String(limit) } });
+}
+
+export async function createUniversity(payload: CreateUniversityPayload): Promise<{ success: boolean; message: string; data: University }> {
+  return apiClient("POST", "/api/v1/universities", { body: payload });
 }

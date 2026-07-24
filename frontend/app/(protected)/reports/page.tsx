@@ -39,7 +39,7 @@ export default function ReportsPage() {
   }, [user]);
 
   const reports = useMemo(() => [
-    { title: "Users", description: `${users.length} account records currently loaded`, icon: Users, rows: users.map((item) => ({ id: item.id, name: item.fullName, email: item.email, role: item.role, destination: item.destination, createdAt: item.createdAt })) },
+    { title: "Users", description: `${users.length} account records currently loaded`, icon: Users, rows: users.map((item) => ({ id: item.id, name: item.fullName, email: item.email, role: item.role, destination: item.destination || "", createdAt: item.createdAt })) },
     { title: "Applications", description: `${applications.length} application records currently loaded`, icon: FileText, rows: applications.map((item) => ({ id: item.id, studentId: item.studentId, universityId: item.universityId, program: item.program, status: item.status, stage: item.stage, updatedAt: item.updatedAt })) },
     { title: "Documents", description: `${documents.length} uploaded document records currently loaded`, icon: FileCheck, rows: documents.map((item) => ({ id: item.id, userId: item.userId, filename: item.originalName, category: item.category, status: item.status, createdAt: item.createdAt })) },
     { title: "Universities", description: `${universities.length} university records currently loaded`, icon: Building2, rows: universities.map((item) => ({ id: item.id, name: item.name, country: item.country, city: item.city, ranking: item.ranking, tuitionFee: item.tuitionFee, active: String(item.isActive) })) },

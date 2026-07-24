@@ -41,17 +41,18 @@ export function UserForm({ user, onSave, onCancel, isSaving }: UserFormProps) {
 
   function validate(): boolean {
     const newErrors: Record<string, string> = {};
+    const isStudent = form.role === "student";
 
     if (!form.fullName.trim()) newErrors.fullName = "Full name is required";
     if (!form.username.trim()) newErrors.username = "Username is required";
     if (!form.email.trim()) newErrors.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(form.email)) newErrors.email = "Invalid email format";
     if (!form.phoneNumber.trim()) newErrors.phoneNumber = "Phone number is required";
-    if (!form.studyLevel) newErrors.studyLevel = "Study level is required";
-    if (!form.destination) newErrors.destination = "Destination is required";
-    if (!form.fieldOfStudy.trim()) newErrors.fieldOfStudy = "Field of study is required";
-    if (!form.intake) newErrors.intake = "Intake is required";
-    if (!form.budget) newErrors.budget = "Budget is required";
+    if (isStudent && !form.studyLevel) newErrors.studyLevel = "Study level is required";
+    if (isStudent && !form.destination) newErrors.destination = "Destination is required";
+    if (isStudent && !form.fieldOfStudy.trim()) newErrors.fieldOfStudy = "Field of study is required";
+    if (isStudent && !form.intake) newErrors.intake = "Intake is required";
+    if (isStudent && !form.budget) newErrors.budget = "Budget is required";
     if (!isEdit && !form.password) newErrors.password = "Password is required";
     if (form.password && form.password.length < 6) newErrors.password = "Password must be at least 6 characters";
 
@@ -63,18 +64,31 @@ export function UserForm({ user, onSave, onCancel, isSaving }: UserFormProps) {
     e.preventDefault();
     if (!validate()) return;
 
+    const payloadForm = {
+      ...form,
+      ...(form.role !== "student"
+        ? {
+            studyLevel: undefined,
+            destination: undefined,
+            fieldOfStudy: undefined,
+            intake: undefined,
+            budget: undefined,
+          }
+        : {}),
+    };
+
     if (isEdit) {
       const payload: AdminUpdateUserPayload = {};
-      for (const key of Object.keys(form) as (keyof typeof form)[]) {
+      for (const key of Object.keys(payloadForm) as (keyof typeof payloadForm)[]) {
         if (key === "password") {
-          if (form.password) payload.password = form.password;
-        } else if (form[key] !== user![key as keyof AdminUser] && form[key] !== "") {
-          Object.assign(payload, { [key]: form[key] });
+          if (payloadForm.password) payload.password = payloadForm.password;
+        } else if (payloadForm[key] !== user![key as keyof AdminUser] && payloadForm[key] !== "") {
+          Object.assign(payload, { [key]: payloadForm[key] });
         }
       }
       await onSave(payload);
     } else {
-      await onSave(form as AdminCreateUserPayload);
+      await onSave(payloadForm as AdminCreateUserPayload);
     }
   }
 
@@ -82,6 +96,7 @@ export function UserForm({ user, onSave, onCancel, isSaving }: UserFormProps) {
   const selectClass = inputClass;
   const labelClass = "text-xs font-semibold text-[#0F172A]";
   const errorClass = "text-xs text-red-600 mt-1";
+  const isStudent = form.role === "student";
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#0F172A]/55 p-0 backdrop-blur-sm sm:items-center sm:p-4">
@@ -132,55 +147,59 @@ export function UserForm({ user, onSave, onCancel, isSaving }: UserFormProps) {
               {errors.phoneNumber && <p className={errorClass}>{errors.phoneNumber}</p>}
             </div>
 
-            {/* Study Level */}
-            <div className="space-y-1">
-              <label className={labelClass}>Study Level</label>
-              <select name="studyLevel" value={form.studyLevel} onChange={handleChange} className={selectClass}>
-                <option value="" disabled>Select level</option>
-                {studyLevels.map((s) => <option key={s} value={s}>{s.replace("-", " ").replace(/\b\w/g, (c) => c.toUpperCase())}</option>)}
-              </select>
-              {errors.studyLevel && <p className={errorClass}>{errors.studyLevel}</p>}
-            </div>
+            {isStudent && (
+              <>
+                {/* Study Level */}
+                <div className="space-y-1">
+                  <label className={labelClass}>Study Level</label>
+                  <select name="studyLevel" value={form.studyLevel} onChange={handleChange} className={selectClass}>
+                    <option value="" disabled>Select level</option>
+                    {studyLevels.map((s) => <option key={s} value={s}>{s.replace("-", " ").replace(/\b\w/g, (c) => c.toUpperCase())}</option>)}
+                  </select>
+                  {errors.studyLevel && <p className={errorClass}>{errors.studyLevel}</p>}
+                </div>
 
-            {/* Destination */}
-            <div className="space-y-1">
-              <label className={labelClass}>Destination</label>
-              <select name="destination" value={form.destination} onChange={handleChange} className={selectClass}>
-                <option value="" disabled>Select country</option>
-                {destinations.map((d) => <option key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1)}</option>)}
-              </select>
-              {errors.destination && <p className={errorClass}>{errors.destination}</p>}
-            </div>
+                {/* Destination */}
+                <div className="space-y-1">
+                  <label className={labelClass}>Destination</label>
+                  <select name="destination" value={form.destination} onChange={handleChange} className={selectClass}>
+                    <option value="" disabled>Select country</option>
+                    {destinations.map((d) => <option key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1)}</option>)}
+                  </select>
+                  {errors.destination && <p className={errorClass}>{errors.destination}</p>}
+                </div>
 
-            {/* Field of Study */}
-            <div className="space-y-1">
-              <label className={labelClass}>Field of Study</label>
-              <input name="fieldOfStudy" value={form.fieldOfStudy} onChange={handleChange} className={inputClass} placeholder="e.g. Computer Science" />
-              {errors.fieldOfStudy && <p className={errorClass}>{errors.fieldOfStudy}</p>}
-            </div>
+                {/* Field of Study */}
+                <div className="space-y-1">
+                  <label className={labelClass}>Field of Study</label>
+                  <input name="fieldOfStudy" value={form.fieldOfStudy} onChange={handleChange} className={inputClass} placeholder="e.g. Computer Science" />
+                  {errors.fieldOfStudy && <p className={errorClass}>{errors.fieldOfStudy}</p>}
+                </div>
 
-            {/* Intake */}
-            <div className="space-y-1">
-              <label className={labelClass}>Intake</label>
-              <select name="intake" value={form.intake} onChange={handleChange} className={selectClass}>
-                <option value="" disabled>Select intake</option>
-                {intakes.map((i) => <option key={i} value={i}>{i.charAt(0).toUpperCase() + i.slice(1)}</option>)}
-              </select>
-              {errors.intake && <p className={errorClass}>{errors.intake}</p>}
-            </div>
+                {/* Intake */}
+                <div className="space-y-1">
+                  <label className={labelClass}>Intake</label>
+                  <select name="intake" value={form.intake} onChange={handleChange} className={selectClass}>
+                    <option value="" disabled>Select intake</option>
+                    {intakes.map((i) => <option key={i} value={i}>{i.charAt(0).toUpperCase() + i.slice(1)}</option>)}
+                  </select>
+                  {errors.intake && <p className={errorClass}>{errors.intake}</p>}
+                </div>
 
-            {/* Budget */}
-            <div className="space-y-1">
-              <label className={labelClass}>Budget</label>
-              <select name="budget" value={form.budget} onChange={handleChange} className={selectClass}>
-                <option value="" disabled>Select budget</option>
-                <option value="under-10k">Under $10,000</option>
-                <option value="10k-20k">$10,000 - $20,000</option>
-                <option value="20k-35k">$20,000 - $35,000</option>
-                <option value="35k-plus">Above $35,000</option>
-              </select>
-              {errors.budget && <p className={errorClass}>{errors.budget}</p>}
-            </div>
+                {/* Budget */}
+                <div className="space-y-1">
+                  <label className={labelClass}>Budget</label>
+                  <select name="budget" value={form.budget} onChange={handleChange} className={selectClass}>
+                    <option value="" disabled>Select budget</option>
+                    <option value="under-10k">Under $10,000</option>
+                    <option value="10k-20k">$10,000 - $20,000</option>
+                    <option value="20k-35k">$20,000 - $35,000</option>
+                    <option value="35k-plus">Above $35,000</option>
+                  </select>
+                  {errors.budget && <p className={errorClass}>{errors.budget}</p>}
+                </div>
+              </>
+            )}
 
             {/* Role */}
             <div className="space-y-1">

@@ -19,6 +19,7 @@ import {
   DollarSign,
   Award,
   Building2,
+  Plus,
 } from "lucide-react";
 
 const COUNTRIES = [
@@ -159,11 +160,19 @@ export default function UniversitiesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">Find Your Perfect Fit</h1>
-        <p className="mt-1 text-sm text-[#64748B]">
-          Discover universities that match your academic profile and preferences.
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">Find Your Perfect Fit</h1>
+          <p className="mt-1 text-sm text-[#64748B]">
+            Discover universities that match your academic profile and preferences.
+          </p>
+        </div>
+        {user.role === "admin" && (
+          <Button onClick={() => router.push("/universities/create")} className="shrink-0">
+            <Plus className="h-4 w-4" />
+            Add University
+          </Button>
+        )}
       </div>
 
       {/* Search Bar */}
@@ -362,11 +371,18 @@ export default function UniversitiesPage() {
           <Building2 className="h-16 w-16 text-[#D1D5DB]" />
           <h3 className="mt-4 text-lg font-bold text-[#0F172A]">No universities found</h3>
           <p className="mt-1 text-sm text-[#64748B]">
-            Try adjusting your filters or search query.
+            {user.role === "admin" ? "Create the first university in the catalog." : "Try adjusting your filters or search query."}
           </p>
-          <Button variant="secondary" className="mt-4" onClick={handleReset}>
-            Reset Filters
-          </Button>
+          {user.role === "admin" ? (
+            <Button className="mt-4" onClick={() => router.push("/universities/create")}>
+              <Plus className="h-4 w-4" />
+              Add University
+            </Button>
+          ) : (
+            <Button variant="secondary" className="mt-4" onClick={handleReset}>
+              Reset Filters
+            </Button>
+          )}
         </div>
       ) : (
         <>

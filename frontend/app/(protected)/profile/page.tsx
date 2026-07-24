@@ -29,6 +29,7 @@ export default function ProfilePage() {
   const [uploadedDocuments, setUploadedDocuments] = useState<Document[]>([]);
 
   useEffect(() => {
+    if (user?.role !== "student") return;
     const timer = window.setTimeout(() => {
       void Promise.all([getMyProfile(), getMyDocuments()]).then(([profileResult, documentResult]) => {
         if (profileResult.success) setAcademicProfile(profileResult.data);
@@ -36,10 +37,11 @@ export default function ProfilePage() {
       });
     }, 0);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [user?.role]);
 
   if (!user) return null;
 
+  const isStudent = user.role === "student";
   const completion = academicProfile?.profileStrength ?? 0;
   const education = academicProfile ? [{ degree: academicProfile.highestQualification, institution: academicProfile.institution, year: String(academicProfile.graduationYear) }] : [];
   const testScores = academicProfile?.testType && academicProfile.testScore !== undefined ? [{ test: academicProfile.testType, score: String(academicProfile.testScore) }] : [];
@@ -168,82 +170,86 @@ export default function ProfilePage() {
               />
             </div>
 
-            {/* Study Level */}
-            <div>
-              <label htmlFor="studyLevel" className="block text-sm font-medium text-[#172B4D]">Study Level</label>
-              <select
-                id="studyLevel"
-                name="studyLevel"
-                defaultValue={user.studyLevel}
-                className="mt-1 block w-full rounded-lg border border-[#E8EEF7] bg-white px-4 py-2.5 text-sm text-[#172B4D] outline-none transition focus:border-[#1565D8] focus:ring-2 focus:ring-[#1565D8]/10"
-              >
-                <option value="high-school">High School</option>
-                <option value="diploma">Diploma</option>
-                <option value="undergraduate">Undergraduate</option>
-                <option value="postgraduate">Postgraduate</option>
-              </select>
-            </div>
+            {isStudent && (
+              <>
+                {/* Study Level */}
+                <div>
+                  <label htmlFor="studyLevel" className="block text-sm font-medium text-[#172B4D]">Study Level</label>
+                  <select
+                    id="studyLevel"
+                    name="studyLevel"
+                    defaultValue={user.studyLevel}
+                    className="mt-1 block w-full rounded-lg border border-[#E8EEF7] bg-white px-4 py-2.5 text-sm text-[#172B4D] outline-none transition focus:border-[#1565D8] focus:ring-2 focus:ring-[#1565D8]/10"
+                  >
+                    <option value="high-school">High School</option>
+                    <option value="diploma">Diploma</option>
+                    <option value="undergraduate">Undergraduate</option>
+                    <option value="postgraduate">Postgraduate</option>
+                  </select>
+                </div>
 
-            {/* Destination */}
-            <div>
-              <label htmlFor="destination" className="block text-sm font-medium text-[#172B4D]">Preferred Destination</label>
-              <select
-                id="destination"
-                name="destination"
-                defaultValue={user.destination}
-                className="mt-1 block w-full rounded-lg border border-[#E8EEF7] bg-white px-4 py-2.5 text-sm text-[#172B4D] outline-none transition focus:border-[#1565D8] focus:ring-2 focus:ring-[#1565D8]/10"
-              >
-                <option value="usa">United States</option>
-                <option value="uk">United Kingdom</option>
-                <option value="canada">Canada</option>
-                <option value="australia">Australia</option>
-                <option value="europe">Europe</option>
-              </select>
-            </div>
+                {/* Destination */}
+                <div>
+                  <label htmlFor="destination" className="block text-sm font-medium text-[#172B4D]">Preferred Destination</label>
+                  <select
+                    id="destination"
+                    name="destination"
+                    defaultValue={user.destination}
+                    className="mt-1 block w-full rounded-lg border border-[#E8EEF7] bg-white px-4 py-2.5 text-sm text-[#172B4D] outline-none transition focus:border-[#1565D8] focus:ring-2 focus:ring-[#1565D8]/10"
+                  >
+                    <option value="usa">United States</option>
+                    <option value="uk">United Kingdom</option>
+                    <option value="canada">Canada</option>
+                    <option value="australia">Australia</option>
+                    <option value="europe">Europe</option>
+                  </select>
+                </div>
 
-            {/* Field of Study */}
-            <div>
-              <label htmlFor="fieldOfStudy" className="block text-sm font-medium text-[#172B4D]">Field of Study</label>
-              <input
-                type="text"
-                id="fieldOfStudy"
-                name="fieldOfStudy"
-                defaultValue={user.fieldOfStudy}
-                className="mt-1 block w-full rounded-lg border border-[#E8EEF7] bg-white px-4 py-2.5 text-sm text-[#172B4D] outline-none transition focus:border-[#1565D8] focus:ring-2 focus:ring-[#1565D8]/10"
-              />
-            </div>
+                {/* Field of Study */}
+                <div>
+                  <label htmlFor="fieldOfStudy" className="block text-sm font-medium text-[#172B4D]">Field of Study</label>
+                  <input
+                    type="text"
+                    id="fieldOfStudy"
+                    name="fieldOfStudy"
+                    defaultValue={user.fieldOfStudy}
+                    className="mt-1 block w-full rounded-lg border border-[#E8EEF7] bg-white px-4 py-2.5 text-sm text-[#172B4D] outline-none transition focus:border-[#1565D8] focus:ring-2 focus:ring-[#1565D8]/10"
+                  />
+                </div>
 
-            {/* Intake */}
-            <div>
-              <label htmlFor="intake" className="block text-sm font-medium text-[#172B4D]">Preferred Intake</label>
-              <select
-                id="intake"
-                name="intake"
-                defaultValue={user.intake}
-                className="mt-1 block w-full rounded-lg border border-[#E8EEF7] bg-white px-4 py-2.5 text-sm text-[#172B4D] outline-none transition focus:border-[#1565D8] focus:ring-2 focus:ring-[#1565D8]/10"
-              >
-                <option value="spring">Spring</option>
-                <option value="summer">Summer</option>
-                <option value="fall">Fall</option>
-                <option value="winter">Winter</option>
-              </select>
-            </div>
+                {/* Intake */}
+                <div>
+                  <label htmlFor="intake" className="block text-sm font-medium text-[#172B4D]">Preferred Intake</label>
+                  <select
+                    id="intake"
+                    name="intake"
+                    defaultValue={user.intake}
+                    className="mt-1 block w-full rounded-lg border border-[#E8EEF7] bg-white px-4 py-2.5 text-sm text-[#172B4D] outline-none transition focus:border-[#1565D8] focus:ring-2 focus:ring-[#1565D8]/10"
+                  >
+                    <option value="spring">Spring</option>
+                    <option value="summer">Summer</option>
+                    <option value="fall">Fall</option>
+                    <option value="winter">Winter</option>
+                  </select>
+                </div>
 
-            {/* Budget */}
-            <div>
-              <label htmlFor="budget" className="block text-sm font-medium text-[#172B4D]">Budget Range</label>
-              <select
-                id="budget"
-                name="budget"
-                defaultValue={user.budget}
-                className="mt-1 block w-full rounded-lg border border-[#E8EEF7] bg-white px-4 py-2.5 text-sm text-[#172B4D] outline-none transition focus:border-[#1565D8] focus:ring-2 focus:ring-[#1565D8]/10"
-              >
-                <option value="under-10k">Under $10,000</option>
-                <option value="10k-20k">$10,000 - $20,000</option>
-                <option value="20k-35k">$20,000 - $35,000</option>
-                <option value="35k-plus">Above $35,000</option>
-              </select>
-            </div>
+                {/* Budget */}
+                <div>
+                  <label htmlFor="budget" className="block text-sm font-medium text-[#172B4D]">Budget Range</label>
+                  <select
+                    id="budget"
+                    name="budget"
+                    defaultValue={user.budget}
+                    className="mt-1 block w-full rounded-lg border border-[#E8EEF7] bg-white px-4 py-2.5 text-sm text-[#172B4D] outline-none transition focus:border-[#1565D8] focus:ring-2 focus:ring-[#1565D8]/10"
+                  >
+                    <option value="under-10k">Under $10,000</option>
+                    <option value="10k-20k">$10,000 - $20,000</option>
+                    <option value="20k-35k">$20,000 - $35,000</option>
+                    <option value="35k-plus">Above $35,000</option>
+                  </select>
+                </div>
+              </>
+            )}
 
             {/* Actions */}
             <div className="flex items-center gap-3 pt-4">
@@ -278,6 +284,7 @@ export default function ProfilePage() {
         user={{
           fullName: user.fullName,
           profileImage: user.profileImage,
+          role: user.role,
           studyLevel: user.studyLevel,
           destination: user.destination,
         }}
@@ -290,19 +297,25 @@ export default function ProfilePage() {
         <div className="lg:col-span-2">
           <PersonalInfoCard user={user} />
         </div>
-        <div>
-          <ReadinessCard completion={completion} missingItems={missingDocuments} />
-        </div>
+        {isStudent && (
+          <div>
+            <ReadinessCard completion={completion} missingItems={missingDocuments} />
+          </div>
+        )}
       </div>
 
-      {/* Education + Test Scores */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <EducationCard education={education} />
-        <TestScoresCard scores={testScores} />
-      </div>
+      {isStudent && (
+        <>
+          {/* Education + Test Scores */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            <EducationCard education={education} />
+            <TestScoresCard scores={testScores} />
+          </div>
 
-      {/* Document Vault */}
-      <DocumentVault documents={documents} />
+          {/* Document Vault */}
+          <DocumentVault documents={documents} />
+        </>
+      )}
     </div>
   );
 }
