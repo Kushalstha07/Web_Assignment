@@ -28,18 +28,15 @@ const COUNTRIES = [
   { label: "🇬🇧 UK", value: "uk" },
   { label: "🇨🇦 Canada", value: "canada" },
   { label: "🇦🇺 Australia", value: "australia" },
-  { label: "🇩🇪 Germany", value: "germany" },
-  { label: "🇫🇷 France", value: "france" },
+  { label: "🇪🇺 Europe", value: "europe" },
 ];
 
 const COURSE_TYPES = [
-  { label: "All Programs", value: "" },
-  { label: "Computer Science", value: "cs" },
-  { label: "Business", value: "business" },
-  { label: "Engineering", value: "engineering" },
-  { label: "Medicine", value: "medicine" },
-  { label: "Law", value: "law" },
-  { label: "Arts", value: "arts" },
+  { label: "All Study Levels", value: "" },
+  { label: "Undergraduate", value: "undergraduate" },
+  { label: "Postgraduate", value: "postgraduate" },
+  { label: "Research", value: "research" },
+  { label: "Diploma", value: "diploma" },
 ];
 
 const BUDGET_RANGES = [
@@ -235,7 +232,7 @@ export default function UniversitiesPage() {
               <div>
                 <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-[#64748B] uppercase tracking-wider">
                   <GraduationCap className="h-3.5 w-3.5" />
-                  Program
+                  Study Level
                 </label>
                 <select
                   value={courseType}

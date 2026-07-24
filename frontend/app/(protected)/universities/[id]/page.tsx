@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter, useParams } from "next/navigation";
-import { getUniversityById } from "@/lib/api/university.api";
+import { deleteUniversity, getUniversityById } from "@/lib/api/university.api";
 import type { University } from "@/lib/api/university.api";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -59,6 +59,7 @@ export default function UniversityDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchUniversity = useCallback(async () => {
     try {
@@ -142,6 +143,20 @@ export default function UniversityDetailPage() {
   const matchScore = university.matchScore ?? 0;
   const rating = university.rating ?? 0;
 
+  async function handleDelete() {
+    const currentUniversity = university;
+    if (!currentUniversity) return;
+    if (!window.confirm(`Delete ${currentUniversity.name}? This cannot be undone.`)) return;
+    try {
+      setDeleting(true);
+      await deleteUniversity(currentUniversity.id);
+      router.push("/universities");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete university");
+      setDeleting(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Back Button */}
@@ -185,6 +200,25 @@ export default function UniversityDetailPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            {user.role === "admin" && (
+              <>
+                <Button
+                  variant="secondary"
+                  onClick={() => router.push(`/universities/${university.id}/edit`)}
+                  className="bg-white/20 text-white border-0 hover:bg-white/30"
+                >
+                  Edit
+                </Button>
+                <Button
+                  variant="danger"
+                  onClick={handleDelete}
+                  loading={deleting}
+                  className="border-0"
+                >
+                  Delete
+                </Button>
+              </>
+            )}
             <Button
               variant="secondary"
               onClick={() => setSaved(!saved)}

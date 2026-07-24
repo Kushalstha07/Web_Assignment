@@ -91,3 +91,11 @@ export async function getUniversityRecommendations(limit = 9): Promise<{ success
 export async function createUniversity(payload: CreateUniversityPayload): Promise<{ success: boolean; message: string; data: University }> {
   return apiClient("POST", "/api/v1/universities", { body: payload });
 }
+
+export async function updateUniversity(id: string, payload: Partial<CreateUniversityPayload>): Promise<{ success: boolean; message: string; data: University }> {
+  return apiClient("PUT", `/api/v1/universities/${id}`, { body: payload });
+}
+
+export async function deleteUniversity(id: string): Promise<{ success: boolean; message: string; data: null }> {
+  return apiClient("DELETE", `/api/v1/universities/${id}`);
+}
