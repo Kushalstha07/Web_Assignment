@@ -3,11 +3,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter, useParams } from "next/navigation";
+import { createApplication } from "@/lib/api/application.api";
 import { deleteUniversity, getUniversityById } from "@/lib/api/university.api";
 import type { University } from "@/lib/api/university.api";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { Select } from "@/components/ui/Select";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import {
   ArrowLeft,
@@ -60,6 +62,9 @@ export default function UniversityDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [applying, setApplying] = useState(false);
+  const [selectedProgram, setSelectedProgram] = useState("");
+  const [applicationError, setApplicationError] = useState<string | null>(null);
 
   const fetchUniversity = useCallback(async () => {
     try {
@@ -68,6 +73,7 @@ export default function UniversityDetailPage() {
       const response = await getUniversityById(id);
       if (response.success) {
         setUniversity(response.data);
+        setSelectedProgram(response.data.programs[0] || response.data.courseType || "");
       } else {
         setError("University not found");
       }
@@ -154,6 +160,35 @@ export default function UniversityDetailPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete university");
       setDeleting(false);
+    }
+  }
+
+  async function handleApply() {
+    if (!university) return;
+    if (!user || user.role !== "student") {
+      setApplicationError("Only students can start applications.");
+      return;
+    }
+
+    const program = selectedProgram || university.programs[0] || university.courseType;
+    if (!program) {
+      setApplicationError("Please select a program before applying.");
+      return;
+    }
+
+    try {
+      setApplying(true);
+      setApplicationError(null);
+      const response = await createApplication({
+        universityId: university.id,
+        program,
+      });
+      if (!response.success) throw new Error(response.message);
+      router.push("/applications");
+    } catch (err) {
+      setApplicationError(err instanceof Error ? err.message : "Unable to start application");
+    } finally {
+      setApplying(false);
     }
   }
 
@@ -379,7 +414,28 @@ export default function UniversityDetailPage() {
               <p className="mt-1 text-xs text-[#64748B]">
                 Based on your academic profile and preferences
               </p>
-              <Button className="mt-4 w-full" size="sm">
+              {university.programs.length > 0 && (
+                <Select
+                  className="mt-4 bg-white"
+                  value={selectedProgram}
+                  onChange={(event) => {
+                    setSelectedProgram(event.target.value);
+                    setApplicationError(null);
+                  }}
+                  options={university.programs.map((program) => ({ value: program, label: program }))}
+                  aria-label="Program"
+                />
+              )}
+              {applicationError && (
+                <p className="mt-3 text-sm font-medium text-[#EF4444]">{applicationError}</p>
+              )}
+              <Button
+                className="mt-4 w-full"
+                size="sm"
+                onClick={handleApply}
+                loading={applying}
+                disabled={applying || user.role !== "student"}
+              >
                 Apply Now
               </Button>
             </div>

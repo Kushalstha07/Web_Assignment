@@ -1,5 +1,8 @@
 import { apiClient } from "./client";
 
+const MAX_UNIVERSITY_LIMIT = 50;
+const MAX_RECOMMENDATION_LIMIT = 20;
+
 export interface University {
   id: string;
   name: string;
@@ -71,7 +74,7 @@ export async function getUniversities(filters: UniversityFilters = {}): Promise<
   if (filters.budgetRange) params.budgetRange = filters.budgetRange;
   if (filters.search) params.search = filters.search;
   if (filters.page) params.page = String(filters.page);
-  if (filters.limit) params.limit = String(filters.limit);
+  if (filters.limit) params.limit = String(Math.min(filters.limit, MAX_UNIVERSITY_LIMIT));
 
   return apiClient<UniversityListResponse>("GET", "/api/v1/universities", { params });
 }
@@ -85,7 +88,7 @@ export async function getUniversitiesByCountry(country: string): Promise<{ succe
 }
 
 export async function getUniversityRecommendations(limit = 9): Promise<{ success: boolean; message: string; data: UniversityRecommendation[] }> {
-  return apiClient("GET", "/api/v1/universities/recommendations", { params: { limit: String(limit) } });
+  return apiClient("GET", "/api/v1/universities/recommendations", { params: { limit: String(Math.min(limit, MAX_RECOMMENDATION_LIMIT)) } });
 }
 
 export async function createUniversity(payload: CreateUniversityPayload): Promise<{ success: boolean; message: string; data: University }> {

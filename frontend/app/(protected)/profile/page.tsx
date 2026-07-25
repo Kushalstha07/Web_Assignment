@@ -12,7 +12,23 @@ import TestScoresCard from "@/components/profile/TestScoresCard";
 import DocumentVault from "@/components/profile/DocumentVault";
 import { getMyProfile } from "@/lib/api/academic-profile.api";
 import type { AcademicProfile } from "@/lib/schemas/academic-profile.schema";
-import { getMyDocuments, type Document } from "@/lib/api/document.api";
+import { getMyDocuments, uploadDocument, type Document } from "@/lib/api/document.api";
+import { Button } from "@/components/ui/Button";
+import { FileDropzone } from "@/components/ui/FileDropzone";
+import { Select } from "@/components/ui/Select";
+import { Textarea } from "@/components/ui/Textarea";
+
+const documentCategoryOptions = [
+  { value: "transcript", label: "Transcript / Marksheet" },
+  { value: "degree", label: "Degree Certificate" },
+  { value: "identity", label: "Passport / Identity" },
+  { value: "language-test", label: "Language Test" },
+  { value: "recommendation", label: "Recommendation Letter" },
+  { value: "sop", label: "Statement of Purpose" },
+  { value: "financial", label: "Financial Document" },
+  { value: "visa", label: "Visa Document" },
+  { value: "other", label: "Other" },
+];
 
 export default function ProfilePage() {
   const { user, refreshUser } = useAuth();
@@ -27,6 +43,10 @@ export default function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [academicProfile, setAcademicProfile] = useState<AcademicProfile | null>(null);
   const [uploadedDocuments, setUploadedDocuments] = useState<Document[]>([]);
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
+  const [documentCategory, setDocumentCategory] = useState("transcript");
+  const [documentNotes, setDocumentNotes] = useState("");
+  const [documentUploading, setDocumentUploading] = useState(false);
 
   useEffect(() => {
     if (user?.role !== "student") return;
@@ -74,6 +94,29 @@ export default function ProfilePage() {
     }
 
     setLoading(false);
+  }
+
+  async function handleDocumentUpload(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!documentFile) {
+      setMessage({ type: "error", text: "Please choose a document to upload." });
+      return;
+    }
+
+    try {
+      setDocumentUploading(true);
+      setMessage(null);
+      const response = await uploadDocument(documentFile, documentCategory, documentNotes.trim() || undefined);
+      if (!response.success) throw new Error(response.message);
+      setUploadedDocuments((current) => [response.data, ...current]);
+      setDocumentFile(null);
+      setDocumentNotes("");
+      setMessage({ type: "success", text: "Document uploaded successfully. It is now pending verification." });
+    } catch (error) {
+      setMessage({ type: "error", text: error instanceof Error ? error.message : "Failed to upload document" });
+    } finally {
+      setDocumentUploading(false);
+    }
   }
 
   if (showEditForm) {
@@ -313,6 +356,45 @@ export default function ProfilePage() {
           </div>
 
           {/* Document Vault */}
+          {message && (
+            <div className={`rounded-xl p-4 text-sm ${message.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
+              {message.text}
+            </div>
+          )}
+          <div className="rounded-2xl bg-white p-6 shadow-sm" style={{ boxShadow: "0px 8px 30px rgba(0,0,0,.05)" }}>
+            <div className="mb-5">
+              <h3 className="text-lg font-bold text-[#172B4D]">Upload Documents</h3>
+              <p className="mt-1 text-sm text-[#6B7280]">Add transcripts, identity documents, test results, financial documents, or SOP files.</p>
+            </div>
+            <form onSubmit={handleDocumentUpload} className="space-y-4">
+              <div className="grid gap-4 lg:grid-cols-2">
+                <Select
+                  label="Document Category"
+                  value={documentCategory}
+                  onChange={(event) => setDocumentCategory(event.target.value)}
+                  options={documentCategoryOptions}
+                />
+                <Textarea
+                  label="Notes (optional)"
+                  value={documentNotes}
+                  onChange={(event) => setDocumentNotes(event.target.value)}
+                  maxLength={500}
+                  placeholder="Add context for your counsellor or admin reviewer"
+                />
+              </div>
+              <FileDropzone
+                accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,image/jpeg,image/png,image/webp"
+                maxSize={10 * 1024 * 1024}
+                onFilesSelected={(files) => setDocumentFile(files[0] || null)}
+                label="Drag & drop your document here, or click to browse"
+              />
+              <div className="flex justify-end">
+                <Button type="submit" loading={documentUploading} disabled={!documentFile || documentUploading}>
+                  Upload Document
+                </Button>
+              </div>
+            </form>
+          </div>
           <DocumentVault documents={documents} />
         </>
       )}

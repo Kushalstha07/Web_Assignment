@@ -6,10 +6,13 @@ import app from "../app";
 import { SECRET_KEY } from "../configs/constant";
 import { DOCUMENT_UPLOAD_DIRECTORY } from "../configs/storage";
 import { NotificationModel } from "../models/notification.model";
+import { CounsellorModel } from "../models/counsellor.model";
+import { ApplicationModel } from "../models/application.model";
 
 let studentToken: string;
 let adminToken: string;
 let otherStudentToken: string;
+let counsellorToken: string;
 let documentId: string;
 let documentFileName: string;
 let studentId: string;
@@ -44,6 +47,26 @@ beforeAll(async () => {
     { id: "other-document-student", email: "other-doc@test.com", role: "student" },
     SECRET_KEY,
   );
+  const counsellor = await CounsellorModel.create({
+    userId: "document-counsellor-user",
+    fullName: "Document Counsellor",
+    email: "document-counsellor@test.com",
+    phoneNumber: "9800000012",
+    specialties: ["university-admissions"],
+  });
+  counsellorToken = jwt.sign(
+    { id: "document-counsellor-user", email: "document-counsellor@test.com", role: "counsellor" },
+    SECRET_KEY,
+  );
+  await ApplicationModel.create({
+    studentId,
+    counsellorId: counsellor._id.toString(),
+    universityId: "507f1f77bcf86cd799439011",
+    program: "MSc Computer Science",
+    status: "submitted",
+    stage: "documents-uploaded",
+    documents: [],
+  });
 });
 
 describe("Document API", () => {
@@ -136,6 +159,24 @@ describe("Document API", () => {
       .set("Authorization", `Bearer ${otherStudentToken}`);
 
     expect(res.status).toBe(403);
+  });
+
+  it("should allow an assigned counsellor to list and download student documents", async () => {
+    const list = await request(app)
+      .get(`/api/v1/documents/student/${studentId}`)
+      .set("Authorization", `Bearer ${counsellorToken}`);
+
+    expect(list.status).toBe(200);
+    expect(list.body.data).toHaveLength(1);
+    expect(list.body.data[0].id).toBe(documentId);
+
+    const download = await request(app)
+      .get(`/api/v1/documents/${documentId}/download`)
+      .set("Authorization", `Bearer ${counsellorToken}`);
+
+    expect(download.status).toBe(200);
+    expect(download.headers["content-disposition"]).toContain("inline");
+    expect(download.text).toBe("Test document content");
   });
 
   it("should allow an admin to download a document", async () => {

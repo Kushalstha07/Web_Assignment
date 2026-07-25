@@ -13,6 +13,16 @@ export interface FileDropzoneProps {
   className?: string;
 }
 
+function acceptsFile(file: File, accept?: string) {
+  if (!accept) return true;
+  return accept.split(",").map((item) => item.trim()).some((pattern) => {
+    if (!pattern) return false;
+    if (pattern.startsWith(".")) return file.name.toLowerCase().endsWith(pattern.toLowerCase());
+    if (pattern.endsWith("/*")) return file.type.startsWith(pattern.slice(0, -1));
+    return file.type === pattern;
+  });
+}
+
 export function FileDropzone({
   onFilesSelected,
   accept,
@@ -36,7 +46,7 @@ export function FileDropzone({
           setError(`"${file.name}" exceeds the ${(maxSize / 1024 / 1024).toFixed(0)}MB limit`);
           continue;
         }
-        if (accept && !file.type.match(accept.replace(/\*/g, ".*"))) {
+        if (!acceptsFile(file, accept)) {
           setError(`"${file.name}" has an unsupported file type`);
           continue;
         }

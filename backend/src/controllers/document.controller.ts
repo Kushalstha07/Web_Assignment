@@ -41,9 +41,10 @@ export class DocumentController {
         role,
       );
       res.setHeader("Content-Type", file.mimeType);
+      const disposition = role === "counsellor" ? "inline" : "attachment";
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename*=UTF-8''${encodeURIComponent(file.originalName)}`,
+        `${disposition}; filename*=UTF-8''${encodeURIComponent(file.originalName)}`,
       );
       return res.sendFile(file.path);
     } catch (error) {
@@ -78,6 +79,25 @@ export class DocumentController {
       const docs = await documentService.getMyDocuments(userId);
       return ApiResponseHelper.success(res, docs, "Documents fetched");
     } catch (error) {
+      const message = error instanceof Error ? error.message : "Something went wrong";
+      return ApiResponseHelper.error(res, message, 500);
+    }
+  }
+
+  async getStudentDocuments(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+      const role = req.user?.role || "student";
+      if (!userId) return ApiResponseHelper.error(res, "Unauthorized", 401);
+
+      const docs = await documentService.getStudentDocuments(
+        req.params.studentId as string,
+        userId,
+        role,
+      );
+      return ApiResponseHelper.success(res, docs, "Student documents fetched");
+    } catch (error) {
+      if (error instanceof HttpException) return ApiResponseHelper.error(res, error.message, error.status);
       const message = error instanceof Error ? error.message : "Something went wrong";
       return ApiResponseHelper.error(res, message, 500);
     }

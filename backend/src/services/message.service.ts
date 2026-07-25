@@ -27,6 +27,8 @@ export class MessageService {
     if (allParticipants.length < 2) throw new HttpException(400, "Choose at least one other participant");
     const users = await userRepo.getUsersByIds(allParticipants);
     if (users.length !== allParticipants.length) throw new HttpException(400, "One or more participants do not exist");
+    const existing = await msgRepo.getConversationByParticipants(allParticipants);
+    if (existing) return toSafeConversation(existing);
     const convData: ConversationType = { participants: allParticipants, title: data.title };
     const created = await msgRepo.createConversation(convData);
     return toSafeConversation(created);

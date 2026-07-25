@@ -9,6 +9,7 @@ import { FRONTEND_URL, JWT_EXPIRES_IN, PASSWORD_RESET_TOKEN_TTL_MS, SECRET_KEY }
 import { PaginationMeta } from "../uttils/apihelper.util";
 import { createHash, randomBytes } from "crypto";
 import { mailService } from "./mail.service";
+import { counsellorService } from "./counsellor.service";
 
 const userRepository = new UserMongoRepository();
 
@@ -103,8 +104,13 @@ export class UserService {
       },
     );
 
+    const safeUser = toSafeUser(user);
+    if (safeUser.role === "counsellor") {
+      await counsellorService.ensureProfileForUserId(safeUser.id);
+    }
+
     return {
-      user: toSafeUser(user),
+      user: safeUser,
       token,
     };
   }
@@ -116,7 +122,11 @@ export class UserService {
       throw new HttpException(404, "User not found");
     }
 
-    return toSafeUser(user);
+    const safeUser = toSafeUser(user);
+    if (safeUser.role === "counsellor") {
+      await counsellorService.ensureProfileForUserId(safeUser.id);
+    }
+    return safeUser;
   }
 
   async updateUser(
@@ -172,7 +182,11 @@ export class UserService {
     if (!user) {
       throw new HttpException(404, "User not found");
     }
-    return toSafeUser(user);
+    const safeUser = toSafeUser(user);
+    if (safeUser.role === "counsellor") {
+      await counsellorService.ensureProfileForUserId(safeUser.id);
+    }
+    return safeUser;
   }
 
   async createUserByAdmin(data: AdminCreateUserDTO): Promise<SafeUser> {
@@ -193,7 +207,11 @@ export class UserService {
       password: hashedPassword,
     });
 
-    return toSafeUser(user);
+    const safeUser = toSafeUser(user);
+    if (safeUser.role === "counsellor") {
+      await counsellorService.ensureProfileForUserId(safeUser.id);
+    }
+    return safeUser;
   }
 
   async updateUserByAdmin(id: string, data: AdminUpdateUserDTO): Promise<SafeUser> {
@@ -230,7 +248,11 @@ export class UserService {
       throw new HttpException(500, "Failed to update user");
     }
 
-    return toSafeUser(updatedUser);
+    const safeUser = toSafeUser(updatedUser);
+    if (safeUser.role === "counsellor") {
+      await counsellorService.ensureProfileForUserId(safeUser.id);
+    }
+    return safeUser;
   }
 
   async deleteUserByAdmin(id: string): Promise<void> {

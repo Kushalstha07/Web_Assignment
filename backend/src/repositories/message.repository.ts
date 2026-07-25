@@ -4,6 +4,7 @@ import { ConversationType, MessageType } from "../types/message.type";
 
 export interface IMessageRepository {
   createConversation(data: ConversationType): Promise<IConversation>;
+  getConversationByParticipants(participantIds: string[]): Promise<IConversation | null>;
   getConversationsForUser(userId: string): Promise<IConversation[]>;
   getConversationById(id: string): Promise<IConversation | null>;
   sendMessage(data: MessageType): Promise<IMessage>;
@@ -16,6 +17,13 @@ export class MessageMongoRepository implements IMessageRepository {
   async createConversation(data: ConversationType): Promise<IConversation> {
     const created = await ConversationModel.create(data);
     return created.toObject() as IConversation;
+  }
+
+  async getConversationByParticipants(participantIds: string[]): Promise<IConversation | null> {
+    const doc = await ConversationModel.findOne({
+      participants: { $all: participantIds, $size: participantIds.length },
+    });
+    return doc ? (doc.toObject() as IConversation) : null;
   }
 
   async getConversationsForUser(userId: string): Promise<IConversation[]> {

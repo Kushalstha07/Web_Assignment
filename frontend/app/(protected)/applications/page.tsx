@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle, Clock3, FileText, Save, Search, Send, Trash2, XCircle } from "lucide-react";
+import { CheckCircle, Clock3, ExternalLink, FileText, MessageSquare, Save, Search, Send, Trash2, XCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -12,8 +12,10 @@ import { Modal } from "@/components/ui/Modal";
 import { SkeletonTable } from "@/components/ui/Skeleton";
 import { Textarea } from "@/components/ui/Textarea";
 import { getUsers } from "@/lib/api/admin.api";
-import { deleteApplication, getAllApplications, getAssignedApplications, getMyApplications, updateApplication, type Application } from "@/lib/api/application.api";
+import { deleteApplication, getAllApplications, getAssignedApplications, getMyApplications, submitApplication, updateApplication, type Application } from "@/lib/api/application.api";
 import { getCounsellors, type Counsellor } from "@/lib/api/counsellor.api";
+import { getStudentDocuments, type Document } from "@/lib/api/document.api";
+import { createConversation, getConversations } from "@/lib/api/message.api";
 import type { AdminUser } from "@/lib/api/types";
 import { getUniversities, type University } from "@/lib/api/university.api";
 
@@ -37,6 +39,8 @@ export default function ApplicationsPage() {
   const [counsellors, setCounsellors] = useState<Counsellor[]>([]);
   const [selected, setSelected] = useState<Application | null>(null);
   const [notesDraft, setNotesDraft] = useState("");
+  const [studentDocuments, setStudentDocuments] = useState<Document[]>([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
@@ -58,7 +62,7 @@ export default function ApplicationsPage() {
         applicationRequest,
         getUniversities({ limit: 100 }),
         user.role === "admin" ? getUsers(1, 100) : Promise.resolve(null),
-        user.role === "admin" ? getCounsellors() : Promise.resolve(null),
+        user.role === "admin" || user.role === "student" ? getCounsellors() : Promise.resolve(null),
       ]);
       setApplications(applicationResult.data || []);
       setUniversities(universityResult.data || []);
@@ -129,6 +133,67 @@ export default function ApplicationsPage() {
     }
   }
 
+  async function submitDraft(application: Application) {
+    try {
+      setSavingId(application.id);
+      const response = await submitApplication(application.id, new Date().toISOString());
+      if (!response.success) throw new Error(response.message);
+      syncApplication(response.data);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to submit application");
+    } finally {
+      setSavingId("");
+    }
+  }
+
+  async function openConversation(application: Application) {
+    if (!user) return;
+    const universityName = universityNames.get(application.universityId) || "Application";
+    let participantId = "";
+    let title = `${universityName} · ${application.program}`;
+
+    if (user.role === "student") {
+      if (!application.counsellorId) {
+        setError("A counsellor needs to be assigned before you can start this chat.");
+        return;
+      }
+      const counsellor = counsellors.find((item) => item.id === application.counsellorId);
+      if (!counsellor) {
+        setError("Unable to find the assigned counsellor account. Try refreshing the page.");
+        return;
+      }
+      participantId = counsellor.userId;
+      title = `${counsellor.fullName} · ${application.program}`;
+    } else if (user.role === "counsellor") {
+      participantId = application.studentId;
+      title = `${application.studentName || "Student"} · ${application.program}`;
+    } else {
+      setError("Only students and counsellors can start application chats here.");
+      return;
+    }
+
+    try {
+      setSavingId(application.id);
+      const conversationResult = await getConversations();
+      const existing = (conversationResult.data || []).find((conversation) =>
+        conversation.participants.length === 2 &&
+        conversation.participants.includes(user.id) &&
+        conversation.participants.includes(participantId),
+      );
+      if (existing) {
+        router.push(`/messages?conversation=${existing.id}`);
+        return;
+      }
+
+      const created = await createConversation([participantId], title);
+      router.push(`/messages?conversation=${created.data.id}`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to open conversation");
+    } finally {
+      setSavingId("");
+    }
+  }
+
   async function removeApplication(application: Application) {
     if (!window.confirm(`Delete the ${application.program} application?`)) return;
     try {
@@ -143,9 +208,21 @@ export default function ApplicationsPage() {
     }
   }
 
-  function openDetails(application: Application) {
+  async function openDetails(application: Application) {
     setSelected(application);
     setNotesDraft(application.notes || "");
+    setStudentDocuments([]);
+    if (user?.role !== "admin") {
+      try {
+        setDocumentsLoading(true);
+        const response = await getStudentDocuments(application.studentId);
+        setStudentDocuments(response.data || []);
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : "Unable to load student documents");
+      } finally {
+        setDocumentsLoading(false);
+      }
+    }
   }
 
   if (authLoading || loading) return <div className="space-y-6"><SkeletonTable rows={7} columns={7}/></div>;
@@ -209,7 +286,7 @@ export default function ApplicationsPage() {
                 <td className="px-5 py-4">{canManageWorkflow ? <select disabled={savingId === item.id} value={item.status} onChange={(event) => void changeApplication(item.id, "status", event.target.value)} className="h-9 rounded-lg border px-2 text-xs">{statuses.map((value) => <option key={value} value={value}>{pretty(value)}</option>)}</select> : <Badge variant={statusVariant(item.status)}>{pretty(item.status)}</Badge>}</td>
                 <td className="px-5 py-4">{canManageWorkflow ? <select disabled={savingId === item.id} value={item.stage} onChange={(event) => void changeApplication(item.id, "stage", event.target.value)} className="h-9 rounded-lg border px-2 text-xs">{stages.map((value) => <option key={value} value={value}>{pretty(value)}</option>)}</select> : <span className="text-sm text-[#64748B]">{pretty(item.stage)}</span>}</td>
                 <td className="px-5 py-4 text-sm text-[#64748B]">{new Date(item.updatedAt).toLocaleDateString()}</td>
-                <td className="px-5 py-4"><Button variant="ghost" size="sm" onClick={() => openDetails(item)}><Send className="h-4 w-4"/>Details</Button></td>
+                <td className="px-5 py-4"><Button variant="ghost" size="sm" onClick={() => void openDetails(item)}><Send className="h-4 w-4"/>Details</Button></td>
               </tr>
             ))}
             {filtered.length === 0 && <tr><td colSpan={8} className="px-6 py-16 text-center text-sm text-[#64748B]">No application records match this view.</td></tr>}
@@ -233,11 +310,50 @@ export default function ApplicationsPage() {
 
             <Textarea label="Case Notes" value={notesDraft} onChange={(event) => setNotesDraft(event.target.value)} maxLength={1000} placeholder="Add internal case notes, student context, or follow-up items." />
 
+            {user.role !== "admin" && (
+              <div className="rounded-xl border border-[#E7EDF6] p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-[#0F172A]">Student Documents</h3>
+                  <span className="text-xs text-[#94A3B8]">{studentDocuments.length} files</span>
+                </div>
+                {documentsLoading && <p className="text-sm text-[#64748B]">Loading documents...</p>}
+                {!documentsLoading && studentDocuments.length === 0 && (
+                  <p className="text-sm text-[#64748B]">No documents have been uploaded for this student yet.</p>
+                )}
+                <div className="space-y-2">
+                  {studentDocuments.map((document) => (
+                    <div key={document.id} className="flex flex-col gap-3 rounded-xl bg-[#F8FAFC] p-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-[#0F172A]">{document.originalName}</p>
+                        <p className="text-xs text-[#64748B]">{pretty(document.category)} · {pretty(document.status)} · {formatSize(document.size)}</p>
+                      </div>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => window.open(document.url, "_blank", "noopener,noreferrer")}>
+                        <ExternalLink className="h-4 w-4" />
+                        View
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               {(user.role === "admin" || selected.studentId === user.id) && (
                 <Button type="button" variant="danger" onClick={() => void removeApplication(selected)} loading={savingId === selected.id}>
                   <Trash2 className="h-4 w-4" />
                   Delete
+                </Button>
+              )}
+              {user.role === "student" && selected.studentId === user.id && selected.status === "draft" && (
+                <Button type="button" onClick={() => void submitDraft(selected)} loading={savingId === selected.id}>
+                  <Send className="h-4 w-4" />
+                  Submit Application
+                </Button>
+              )}
+              {((user.role === "student" && selected.studentId === user.id && selected.counsellorId) || user.role === "counsellor") && (
+                <Button type="button" variant="secondary" onClick={() => void openConversation(selected)} loading={savingId === selected.id}>
+                  <MessageSquare className="h-4 w-4" />
+                  Message
                 </Button>
               )}
               <Button type="button" onClick={() => void saveNotes()} loading={savingId === selected.id}>
@@ -258,4 +374,10 @@ function Metric({ label, value, icon: Icon, color, bg }: { label: string; value:
 
 function Detail({ label, value }: { label: string; value: string }) {
   return <div className="rounded-xl border border-[#E7EDF6] p-3"><p className="text-xs text-[#94A3B8]">{label}</p><p className="mt-1 text-sm font-semibold text-[#0F172A]">{value}</p></div>;
+}
+
+function formatSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }

@@ -75,6 +75,16 @@ describe("Messaging API", () => {
     conversationId = response.body.data.id;
   });
 
+  it("reuses an existing conversation with the same participants", async () => {
+    const response = await request(app)
+      .post("/api/v1/messages/conversations")
+      .set("Authorization", `Bearer ${studentToken}`)
+      .send({ participantIds: [counsellor._id.toString()], title: "Another title" });
+
+    expect(response.status).toBe(201);
+    expect(response.body.data.id).toBe(conversationId);
+  });
+
   it("lets participants send messages and notifies the recipient", async () => {
     const response = await request(app)
       .post("/api/v1/messages/send")

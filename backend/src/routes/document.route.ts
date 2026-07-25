@@ -9,6 +9,7 @@ const controller = new DocumentController();
 router.post("/upload", authenticate, documentUpload.single("document"), controller.upload.bind(controller));
 router.get("/", authenticate, controller.getMyDocuments.bind(controller));
 router.get("/all", authenticate, authorize("admin"), controller.getAll.bind(controller));
+router.get("/student/:studentId", authenticate, controller.getStudentDocuments.bind(controller));
 router.get("/:id", authenticate, controller.getById.bind(controller));
 router.get("/:id/download", authenticate, controller.download.bind(controller));
 router.patch("/:id/verify", authenticate, authorize("admin"), controller.verify.bind(controller));
