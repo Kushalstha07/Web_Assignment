@@ -45,8 +45,10 @@ export default function ReportsPage() {
     { title: "Universities", description: `${universities.length} university records currently loaded`, icon: Building2, rows: universities.map((item) => ({ id: item.id, name: item.name, country: item.country, city: item.city, ranking: item.ranking, tuitionFee: item.tuitionFee, active: String(item.isActive) })) },
   ], [users, applications, documents, universities]);
 
-  if (authLoading || loading) return <div className="grid gap-4 md:grid-cols-2">{[1,2,3,4].map((item) => <SkeletonCard key={item}/>)}</div>;
+  if (authLoading) return <div className="grid gap-4 md:grid-cols-2">{[1,2,3,4].map((item) => <SkeletonCard key={item}/>)}</div>;
   if (!user) return null;
+  if (user.role !== "admin") return <AdminGuard><div /></AdminGuard>;
+  if (loading) return <div className="grid gap-4 md:grid-cols-2">{[1,2,3,4].map((item) => <SkeletonCard key={item}/>)}</div>;
 
   return <AdminGuard><div className="space-y-6">
     <div><h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">Reports</h1><p className="mt-1 text-sm text-[#64748B]">Download CSV exports generated from the current API records{loadedAt ? ` · refreshed ${loadedAt.toLocaleString()}` : ""}.</p></div>

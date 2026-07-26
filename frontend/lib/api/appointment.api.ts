@@ -46,7 +46,7 @@ export async function getAppointmentById(id: string): Promise<{ success: boolean
   return apiClient("GET", `/api/v1/appointments/${id}`);
 }
 
-export async function updateAppointment(id: string, data: { date?: string; startTime?: string; endTime?: string; notes?: string }): Promise<{ success: boolean; data: Appointment; message: string }> {
+export async function updateAppointment(id: string, data: { date?: string; startTime?: string; endTime?: string; status?: string; notes?: string; meetingLink?: string }): Promise<{ success: boolean; data: Appointment; message: string }> {
   return apiClient("PATCH", `/api/v1/appointments/${id}`, { body: data });
 }
 

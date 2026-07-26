@@ -3,6 +3,9 @@ import type { NextRequest } from "next/server";
 
 const protectedPaths = [
   "/dashboard",
+  "/admin",
+  "/ai-chat",
+  "/onboarding",
   "/students",
   "/applications",
   "/universities",

@@ -13,7 +13,9 @@ export const UpdateAppointmentDTO = z.object({
   date: z.string().optional(),
   startTime: z.string().optional(),
   endTime: z.string().optional(),
+  status: z.enum(appointmentStatuses).optional(),
   notes: z.string().max(500).optional(),
+  meetingLink: z.string().max(1000).optional(),
 });
 
 export const CancelAppointmentDTO = z.object({

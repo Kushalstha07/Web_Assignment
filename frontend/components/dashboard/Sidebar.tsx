@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import {
-  Award, BarChart3, Building2, Calendar, ChevronLeft, ChevronRight, FileCheck,
+  Award, BarChart3, Bot, Building2, Calendar, ChevronLeft, ChevronRight, FileCheck,
   FileText, LayoutDashboard, LineChart, LogOut, MessageSquare, Plane, Settings,
   Shield, Sparkles, User, UserCheck, Users, X,
 } from "lucide-react";
@@ -20,6 +20,7 @@ const adminGroups: NavGroup[] = [
     { href: "/applications", label: "Applications", icon: FileText },
     { href: "/universities", label: "Universities", icon: Building2 },
     { href: "/scholarships", label: "Scholarships", icon: Award },
+    { href: "/ai-chat", label: "AI Chat", icon: Bot },
   ]},
   { label: "Workflow", items: [
     { href: "/verification", label: "Document Verification", icon: FileCheck },
@@ -42,7 +43,9 @@ const studentGroups: NavGroup[] = [
     { href: "/applications", label: "My Applications", icon: FileText },
     { href: "/universities", label: "Universities", icon: Building2 },
     { href: "/scholarships", label: "Scholarships", icon: Award },
+    { href: "/visa", label: "Visa Processing", icon: Plane },
     { href: "/recommendations", label: "Recommendations", icon: Sparkles },
+    { href: "/ai-chat", label: "AI Chat", icon: Bot },
   ]},
   { label: "Services", items: [
     { href: "/appointments", label: "Book Appointment", icon: Calendar },
@@ -57,8 +60,10 @@ const counsellorGroups: NavGroup[] = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/students", label: "Students", icon: Users },
     { href: "/applications", label: "Applications", icon: FileText },
+    { href: "/visa", label: "Visa Processing", icon: Plane },
     { href: "/appointments", label: "Appointments", icon: Calendar },
     { href: "/messages", label: "Messages", icon: MessageSquare },
+    { href: "/ai-chat", label: "AI Chat", icon: Bot },
   ]},
   { label: "Account", items: [
     { href: "/profile", label: "My Profile", icon: User },

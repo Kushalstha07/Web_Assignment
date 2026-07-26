@@ -166,6 +166,15 @@ export class AppointmentService {
     if (!(await this.canAccess(app, userId, role))) {
       throw new HttpException(403, "You can only update your own appointments");
     }
+    if (role === "student" && (data.status || data.meetingLink !== undefined)) {
+      throw new HttpException(403, "Students can only update appointment date, time, and notes");
+    }
+    if (data.status === "cancelled") {
+      throw new HttpException(400, "Use the cancel endpoint to cancel appointments");
+    }
+    if (["completed", "no-show"].includes(String(app.status))) {
+      throw new HttpException(400, "Completed or no-show appointments cannot be updated");
+    }
     const updated = await appointmentRepo.update(id, data);
     if (!updated) throw new HttpException(500, "Failed to update appointment");
     const counsellor = await counsellorRepo.getById(app.counsellorId);

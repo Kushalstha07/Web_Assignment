@@ -20,6 +20,7 @@ export default function AdminUsersPage() {
 
   // Search & pagination
   const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const limit = 10;
@@ -42,7 +43,7 @@ export default function AdminUsersPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await getUsers(page, limit, search || undefined);
+      const response = await getUsers(page, limit, search || undefined, roleFilter || undefined);
       if (response.success) {
         setUsers(response.data);
         setMeta(response.meta);
@@ -54,12 +55,13 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [page, search, roleFilter]);
 
   useEffect(() => {
+    if (!user || user.role !== "admin") return;
     const timer = window.setTimeout(() => void fetchUsers(), 0);
     return () => window.clearTimeout(timer);
-  }, [fetchUsers]);
+  }, [fetchUsers, user]);
 
   // Debounced search
   useEffect(() => {
@@ -160,7 +162,9 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Search */}
-      <div className="relative rounded-2xl border border-[#E7EDF6] bg-white p-4 shadow-sm">
+      <div className="rounded-2xl border border-[#E7EDF6] bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="relative flex-1">
         <svg
           className="absolute left-4 top-1/2 -translate-y-1/2 text-[#94A3B8]"
           width="18"
@@ -182,6 +186,18 @@ export default function AdminUsersPage() {
           placeholder="Search by name or email..."
           className="h-12 w-full rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] pl-11 pr-4 text-sm text-[#0F172A] outline-none transition placeholder:text-[#94A3B8] focus:border-[#1D4ED8] focus:bg-white focus:ring-2 focus:ring-[#1D4ED8]/15 sm:max-w-lg"
         />
+          </div>
+          <select
+            value={roleFilter}
+            onChange={(event) => { setRoleFilter(event.target.value); setPage(1); }}
+            className="h-12 rounded-xl border border-[#E2E8F0] bg-white px-4 text-sm text-[#0F172A] outline-none transition focus:border-[#1D4ED8] focus:ring-2 focus:ring-[#1D4ED8]/15"
+          >
+            <option value="">All roles</option>
+            <option value="student">Students</option>
+            <option value="counsellor">Counsellors</option>
+            <option value="admin">Admins</option>
+          </select>
+        </div>
       </div>
 
       {/* Error State */}

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Calendar as CalendarIcon, Clock, List, Video, XCircle } from "lucide-react";
+import { Calendar as CalendarIcon, CheckCircle, Clock, List, Save, UserCheck, Video, XCircle } from "lucide-react";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
@@ -10,16 +10,34 @@ import { useAuth } from "@/context/AuthContext";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { SkeletonCard } from "@/components/ui/Skeleton";
-import { cancelAppointment, getAllAppointments, getMyAppointments, type Appointment } from "@/lib/api/appointment.api";
+import { Textarea } from "@/components/ui/Textarea";
+import { cancelAppointment, getAllAppointments, getMyAppointments, updateAppointment, type Appointment } from "@/lib/api/appointment.api";
 import { getCounsellors, type Counsellor } from "@/lib/api/counsellor.api";
 
 const localizer = momentLocalizer(moment);
 type AppointmentEvent = { id: string; title: string; start: Date; end: Date; resource: Appointment };
+type AppointmentForm = { date: string; startTime: string; endTime: string; notes: string; meetingLink: string; cancellationReason: string };
 
 function appointmentDate(date: string, time: string) {
   return new Date(`${date.slice(0, 10)}T${time}:00`);
+}
+
+function emptyForm(): AppointmentForm {
+  return { date: "", startTime: "", endTime: "", notes: "", meetingLink: "", cancellationReason: "" };
+}
+
+function formFromAppointment(item: Appointment): AppointmentForm {
+  return {
+    date: item.date.slice(0, 10),
+    startTime: item.startTime,
+    endTime: item.endTime,
+    notes: item.notes || "",
+    meetingLink: item.meetingLink || "",
+    cancellationReason: item.cancellationReason || "",
+  };
 }
 
 export default function AppointmentsPage() {
@@ -30,8 +48,11 @@ export default function AppointmentsPage() {
   const [view, setView] = useState<"calendar" | "list">("calendar");
   const [status, setStatus] = useState("");
   const [selected, setSelected] = useState<Appointment | null>(null);
+  const [form, setForm] = useState<AppointmentForm>(emptyForm);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [processMessage, setProcessMessage] = useState("");
 
   useEffect(() => { if (!authLoading && !user) router.push("/login"); }, [authLoading, user, router]);
   const load = useCallback(async () => {
@@ -49,26 +70,76 @@ export default function AppointmentsPage() {
   }, [load]);
 
   const names = useMemo(() => new Map(counsellors.map((item) => [item.id, item.fullName])), [counsellors]);
+  const counsellorById = useMemo(() => new Map(counsellors.map((item) => [item.id, item])), [counsellors]);
   const filtered = useMemo(() => appointments.filter((item) => !status || item.status === status), [appointments, status]);
   const events: AppointmentEvent[] = filtered.map((item) => ({ id: item.id, title: names.get(item.counsellorId) || "Counselling appointment", start: appointmentDate(item.date, item.startTime), end: appointmentDate(item.date, item.endTime), resource: item }));
   const upcoming = appointments.filter((item) => item.status !== "cancelled" && appointmentDate(item.date, item.startTime) >= new Date()).length;
+  const canManageProcess = user?.role === "admin" || user?.role === "counsellor";
+  const canEditSchedule = selected && !["cancelled", "completed", "no-show"].includes(selected.status);
+  const openAppointment = (item: Appointment) => { setSelected(item); setForm(formFromAppointment(item)); setProcessMessage(""); setError(""); };
+  const updateField = (field: keyof AppointmentForm, value: string) => setForm((current) => ({ ...current, [field]: value }));
 
   async function cancelCurrent() {
     if (!selected) return;
-    const response = await cancelAppointment(selected.id, "Cancelled from appointment dashboard");
-    if (!response.success) { setError(response.message); return; }
-    setSelected(null); await load();
+    try {
+      setSaving(true);
+      const response = await cancelAppointment(selected.id, form.cancellationReason || "Cancelled from appointment dashboard");
+      if (!response.success) throw new Error(response.message);
+      setSelected(null);
+      setProcessMessage("Appointment cancelled.");
+      await load();
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to cancel appointment"); }
+    finally { setSaving(false); }
+  }
+
+  async function saveSchedule() {
+    if (!selected || !canEditSchedule) return;
+    if (!form.date || !form.startTime || !form.endTime) { setError("Date, start time, and end time are required."); return; }
+    try {
+      setSaving(true);
+      const payload = canManageProcess ? { date: form.date, startTime: form.startTime, endTime: form.endTime, notes: form.notes, meetingLink: form.meetingLink || undefined } : { date: form.date, startTime: form.startTime, endTime: form.endTime, notes: form.notes };
+      const response = await updateAppointment(selected.id, payload);
+      if (!response.success) throw new Error(response.message);
+      setSelected(response.data);
+      setForm(formFromAppointment(response.data));
+      setProcessMessage("Appointment updated.");
+      await load();
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to update appointment"); }
+    finally { setSaving(false); }
+  }
+
+  async function changeStatus(nextStatus: string) {
+    if (!selected || !canManageProcess) return;
+    try {
+      setSaving(true);
+      const response = await updateAppointment(selected.id, { status: nextStatus });
+      if (!response.success) throw new Error(response.message);
+      setSelected(response.data);
+      setForm(formFromAppointment(response.data));
+      setProcessMessage(`Appointment marked ${nextStatus}.`);
+      await load();
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to update appointment status"); }
+    finally { setSaving(false); }
   }
 
   if (authLoading || loading) return <SkeletonCard/>;
   if (!user) return null;
 
   return <div className="space-y-6">
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">Appointments</h1><p className="mt-1 text-sm text-[#64748B]">Your real booking schedule.</p></div><Button className="w-full sm:w-auto" onClick={() => router.push("/counsellors")}><CalendarIcon className="h-4 w-4"/>Book appointment</Button></div>
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">Appointments</h1><p className="mt-1 text-sm text-[#64748B]">Manage booking requests, meeting links, and appointment outcomes.</p></div>{user.role === "student" && <Button className="w-full sm:w-auto" onClick={() => router.push("/counsellors")}><CalendarIcon className="h-4 w-4"/>Book appointment</Button>}</div>
     {error && <div className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</div>}
-    <div className="grid gap-4 sm:grid-cols-3"><Card><p className="text-sm text-[#64748B]">Total</p><p className="mt-1 text-2xl font-bold">{appointments.length}</p></Card><Card><p className="text-sm text-[#64748B]">Upcoming</p><p className="mt-1 text-2xl font-bold text-[#2563EB]">{upcoming}</p></Card><Card><p className="text-sm text-[#64748B]">Completed</p><p className="mt-1 text-2xl font-bold text-[#22C55E]">{appointments.filter((item) => item.status === "completed").length}</p></Card></div>
+    {processMessage && <div className="rounded-xl bg-green-50 p-3 text-sm text-green-700">{processMessage}</div>}
+    <div className="grid gap-4 sm:grid-cols-4"><Card><p className="text-sm text-[#64748B]">Total</p><p className="mt-1 text-2xl font-bold">{appointments.length}</p></Card><Card><p className="text-sm text-[#64748B]">Upcoming</p><p className="mt-1 text-2xl font-bold text-[#2563EB]">{upcoming}</p></Card><Card><p className="text-sm text-[#64748B]">Confirmed</p><p className="mt-1 text-2xl font-bold text-[#7C3AED]">{appointments.filter((item) => item.status === "confirmed").length}</p></Card><Card><p className="text-sm text-[#64748B]">Completed</p><p className="mt-1 text-2xl font-bold text-[#22C55E]">{appointments.filter((item) => item.status === "completed").length}</p></Card></div>
     <Card><div className="flex flex-wrap items-center justify-between gap-3"><select value={status} onChange={(event) => setStatus(event.target.value)} className="h-10 rounded-xl border px-3 text-sm"><option value="">All statuses</option>{["scheduled", "confirmed", "completed", "cancelled", "no-show"].map((item) => <option key={item}>{item}</option>)}</select><div className="flex rounded-xl bg-[#F1F5F9] p-1"><button onClick={() => setView("calendar")} className={`flex items-center gap-1 rounded-lg px-3 py-2 text-sm ${view === "calendar" ? "bg-white shadow-sm" : "text-[#64748B]"}`}><CalendarIcon className="h-4 w-4"/>Calendar</button><button onClick={() => setView("list")} className={`flex items-center gap-1 rounded-lg px-3 py-2 text-sm ${view === "list" ? "bg-white shadow-sm" : "text-[#64748B]"}`}><List className="h-4 w-4"/>List</button></div></div></Card>
-    {view === "calendar" ? <Card><div className="h-[620px]"><Calendar localizer={localizer} events={events} startAccessor="start" endAccessor="end" onSelectEvent={(event: AppointmentEvent) => setSelected(event.resource)} popup/></div></Card> : <Card padding="none"><div className="divide-y">{filtered.map((item) => <button key={item.id} onClick={() => setSelected(item)} className="flex w-full flex-wrap items-center justify-between gap-3 p-5 text-left hover:bg-[#F8FAFC]"><div><p className="font-semibold text-[#0F172A]">{names.get(item.counsellorId) || "Counselling appointment"}</p><p className="mt-1 text-sm text-[#64748B]">{new Date(item.date).toLocaleDateString()} · {item.startTime}–{item.endTime}</p></div><Badge variant={item.status === "completed" ? "success" : item.status === "cancelled" ? "default" : "info"}>{item.status}</Badge></button>)}{filtered.length === 0 && <p className="p-10 text-center text-sm text-[#64748B]">No appointments match this filter.</p>}</div></Card>}
-    <Modal isOpen={Boolean(selected)} onClose={() => setSelected(null)} title="Appointment details"><div className="space-y-4">{selected && <><div><p className="font-semibold text-[#0F172A]">{names.get(selected.counsellorId) || "Counselling appointment"}</p><p className="text-sm text-[#64748B]">{new Date(selected.date).toLocaleDateString()}</p></div><div className="flex items-center gap-2 text-sm"><Clock className="h-4 w-4 text-[#2563EB]"/>{selected.startTime}–{selected.endTime}</div>{selected.notes && <p className="rounded-xl bg-[#F8FAFC] p-3 text-sm">{selected.notes}</p>}{selected.meetingLink && <a href={selected.meetingLink} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm font-semibold text-[#2563EB]"><Video className="h-4 w-4"/>Join meeting</a>}<Badge variant={selected.status === "cancelled" ? "default" : "info"}>{selected.status}</Badge>{!['cancelled','completed'].includes(selected.status) && <Button variant="danger" className="w-full" onClick={cancelCurrent}><XCircle className="h-4 w-4"/>Cancel appointment</Button>}</>}</div></Modal>
+    {view === "calendar" ? <Card><div className="h-[620px]"><Calendar localizer={localizer} events={events} startAccessor="start" endAccessor="end" onSelectEvent={(event: AppointmentEvent) => openAppointment(event.resource)} popup/></div></Card> : <Card padding="none"><div className="divide-y">{filtered.map((item) => <button key={item.id} onClick={() => openAppointment(item)} className="flex w-full flex-wrap items-center justify-between gap-3 p-5 text-left hover:bg-[#F8FAFC]"><div><p className="font-semibold text-[#0F172A]">{names.get(item.counsellorId) || "Counselling appointment"}</p><p className="mt-1 text-sm text-[#64748B]">{new Date(item.date).toLocaleDateString()} · {item.startTime}–{item.endTime}</p></div><Badge variant={item.status === "completed" ? "success" : item.status === "cancelled" ? "default" : "info"}>{item.status}</Badge></button>)}{filtered.length === 0 && <p className="p-10 text-center text-sm text-[#64748B]">No appointments match this filter.</p>}</div></Card>}
+    <Modal isOpen={Boolean(selected)} onClose={() => setSelected(null)} title="Appointment process" size="lg"><div className="space-y-5">{selected && <><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold text-[#0F172A]">{names.get(selected.counsellorId) || "Counselling appointment"}</p><p className="text-sm text-[#64748B]">{counsellorById.get(selected.counsellorId)?.email || "Counsellor session"}</p></div><Badge variant={selected.status === "completed" ? "success" : selected.status === "cancelled" ? "default" : "info"}>{selected.status}</Badge></div>
+      <div className="grid gap-3 sm:grid-cols-3"><Input label="Date" type="date" value={form.date} disabled={!canEditSchedule || saving} onChange={(event) => updateField("date", event.target.value)}/><Input label="Start" type="time" value={form.startTime} disabled={!canEditSchedule || saving} onChange={(event) => updateField("startTime", event.target.value)}/><Input label="End" type="time" value={form.endTime} disabled={!canEditSchedule || saving} onChange={(event) => updateField("endTime", event.target.value)}/></div>
+      {canManageProcess && <Input label="Meeting link" value={form.meetingLink} disabled={!canEditSchedule || saving} onChange={(event) => updateField("meetingLink", event.target.value)} placeholder="https://meet.google.com/..."/>}
+      <Textarea label="Notes" value={form.notes} disabled={!canEditSchedule || saving} onChange={(event) => updateField("notes", event.target.value)} placeholder="Agenda, preparation notes, or student context"/>
+      {selected.meetingLink && <a href={selected.meetingLink} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm font-semibold text-[#2563EB]"><Video className="h-4 w-4"/>Join meeting</a>}
+      {selected.cancellationReason && <p className="rounded-xl bg-[#F8FAFC] p-3 text-sm text-[#64748B]">Cancellation reason: {selected.cancellationReason}</p>}
+      {canEditSchedule && <div className="flex flex-wrap justify-end gap-3"><Button variant="secondary" onClick={() => { setForm(formFromAppointment(selected)); setError(""); }}>Reset</Button><Button loading={saving} onClick={saveSchedule}><Save className="h-4 w-4"/>Save changes</Button></div>}
+      {canManageProcess && canEditSchedule && <div className="grid gap-2 sm:grid-cols-3"><Button variant="secondary" loading={saving} onClick={() => changeStatus("confirmed")}><UserCheck className="h-4 w-4"/>Confirm</Button><Button variant="secondary" loading={saving} onClick={() => changeStatus("completed")}><CheckCircle className="h-4 w-4"/>Complete</Button><Button variant="secondary" loading={saving} onClick={() => changeStatus("no-show")}><Clock className="h-4 w-4"/>No-show</Button></div>}
+      {canEditSchedule && <div className="border-t pt-4"><Textarea label="Cancellation reason" value={form.cancellationReason} disabled={saving} onChange={(event) => updateField("cancellationReason", event.target.value)} placeholder="Optional reason shared in the record"/><Button variant="danger" className="mt-3 w-full" loading={saving} onClick={cancelCurrent}><XCircle className="h-4 w-4"/>Cancel appointment</Button></div>}</>}</div></Modal>
   </div>;
 }
