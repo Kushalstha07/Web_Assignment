@@ -163,8 +163,9 @@ export class UserService {
     page: number,
     limit: number,
     searchTerm?: string,
+    role?: string,
   ): Promise<{ data: SafeUser[]; meta: PaginationMeta }> {
-    const { users, total } = await userRepository.getAllPaginated(page, limit, searchTerm);
+    const { users, total } = await userRepository.getAllPaginated(page, limit, searchTerm, role);
 
     return {
       data: users.map(toSafeUser),

@@ -99,8 +99,9 @@ export function UserForm({ user, onSave, onCancel, isSaving }: UserFormProps) {
   const isStudent = form.role === "student";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#0F172A]/55 p-0 backdrop-blur-sm sm:items-center sm:p-4">
-      <div className="admin-scrollbar max-h-[94vh] w-full max-w-2xl overflow-y-auto rounded-t-[24px] bg-white p-4 shadow-2xl sm:max-h-[90vh] sm:rounded-[24px] sm:p-6">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#0F172A]/55 p-0 backdrop-blur-sm sm:p-4">
+      <div className="flex min-h-full items-start justify-center sm:py-8">
+        <div className="admin-scrollbar max-h-[calc(100vh-2rem)] w-full max-w-2xl overflow-y-auto rounded-t-[24px] bg-white p-4 shadow-2xl sm:max-h-[calc(100vh-4rem)] sm:rounded-[24px] sm:p-6">
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-lg font-bold text-[#0F172A]">
             {isEdit ? "Edit User" : "Create User"}
@@ -237,6 +238,7 @@ export function UserForm({ user, onSave, onCancel, isSaving }: UserFormProps) {
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

@@ -12,8 +12,9 @@ export class AdminController {
       const page = Math.max(1, parseInt(req.query.page as string) || 1);
       const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 10));
       const search = (req.query.search as string) || undefined;
+      const role = (req.query.role as string) || undefined;
 
-      const result = await userService.getAllUsers(page, limit, search);
+      const result = await userService.getAllUsers(page, limit, search, role);
       return ApiResponseHelper.success(res, result.data, "Users fetched successfully", 200, result.meta);
     } catch (err: any) {
       return ApiResponseHelper.error(res, err.message || "Internal Server Error", err.status || 500);

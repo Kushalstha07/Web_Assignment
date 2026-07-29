@@ -176,6 +176,7 @@ describe("Document API", () => {
 
     expect(download.status).toBe(200);
     expect(download.headers["content-disposition"]).toContain("inline");
+    expect(download.headers["x-frame-options"]).toBe("SAMEORIGIN");
     expect(download.text).toBe("Test document content");
   });
 

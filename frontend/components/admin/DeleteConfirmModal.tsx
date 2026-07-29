@@ -11,8 +11,9 @@ interface DeleteConfirmModalProps {
 
 export function DeleteConfirmModal({ user, onConfirm, onCancel, isDeleting }: DeleteConfirmModalProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0F172A]/55 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-[24px] border border-white/20 bg-white p-6 shadow-2xl">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#0F172A]/55 p-4 backdrop-blur-sm">
+      <div className="flex min-h-full items-start justify-center py-8">
+        <div className="max-h-[calc(100vh-4rem)] w-full max-w-md overflow-y-auto rounded-[24px] border border-white/20 bg-white p-6 shadow-2xl">
         <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
@@ -43,6 +44,7 @@ export function DeleteConfirmModal({ user, onConfirm, onCancel, isDeleting }: De
           >
             {isDeleting ? "Deleting..." : "Delete User"}
           </button>
+        </div>
         </div>
       </div>
     </div>

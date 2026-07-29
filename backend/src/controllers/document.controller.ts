@@ -41,11 +41,14 @@ export class DocumentController {
         role,
       );
       res.setHeader("Content-Type", file.mimeType);
-      const disposition = role === "counsellor" ? "inline" : "attachment";
+      const disposition = role === "admin" || role === "counsellor" ? "inline" : "attachment";
       res.setHeader(
         "Content-Disposition",
         `${disposition}; filename*=UTF-8''${encodeURIComponent(file.originalName)}`,
       );
+      if (disposition === "inline") {
+        res.setHeader("X-Frame-Options", "SAMEORIGIN");
+      }
       return res.sendFile(file.path);
     } catch (error) {
       if (error instanceof HttpException) {

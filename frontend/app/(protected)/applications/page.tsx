@@ -43,6 +43,7 @@ export default function ApplicationsPage() {
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
+  const [assignment, setAssignment] = useState("");
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState("");
   const [error, setError] = useState("");
@@ -84,9 +85,10 @@ export default function ApplicationsPage() {
   const canManageWorkflow = user?.role === "admin" || user?.role === "counsellor";
 
   const filtered = useMemo(() => applications.filter((item) => {
-    const haystack = `${item.program} ${item.studentName || ""} ${userNames.get(item.studentId) || item.studentId} ${universityNames.get(item.universityId) || item.universityId}`.toLowerCase();
-    return haystack.includes(search.toLowerCase()) && (!status || item.status === status);
-  }), [applications, search, status, userNames, universityNames]);
+    const haystack = `${item.program} ${item.studentName || ""} ${userNames.get(item.studentId) || item.studentId} ${universityNames.get(item.universityId) || item.universityId} ${item.counsellorId ? counsellorNames.get(item.counsellorId) || item.counsellorId : "unassigned"}`.toLowerCase();
+    const matchesAssignment = !assignment || (assignment === "assigned" ? Boolean(item.counsellorId) : !item.counsellorId);
+    return haystack.includes(search.toLowerCase()) && (!status || item.status === status) && matchesAssignment;
+  }), [applications, assignment, counsellorNames, search, status, userNames, universityNames]);
 
   function syncApplication(updated: Application) {
     setApplications((current) => current.map((item) => item.id === updated.id ? updated : item));
@@ -233,6 +235,7 @@ export default function ApplicationsPage() {
     submitted: applications.filter((item) => item.status === "submitted" || item.status === "under-review").length,
     accepted: applications.filter((item) => item.status === "accepted").length,
     rejected: applications.filter((item) => item.status === "rejected").length,
+    unassigned: applications.filter((item) => !item.counsellorId).length,
   };
 
   return (
@@ -251,7 +254,7 @@ export default function ApplicationsPage() {
         <Metric label="Total" value={counts.total} icon={FileText} color="text-[#2563EB]" bg="bg-[#EEF5FF]"/>
         <Metric label="In review" value={counts.submitted} icon={Clock3} color="text-[#F59E0B]" bg="bg-[#FFF9EE]"/>
         <Metric label="Accepted" value={counts.accepted} icon={CheckCircle} color="text-[#22C55E]" bg="bg-[#F0FDF4]"/>
-        <Metric label="Rejected" value={counts.rejected} icon={XCircle} color="text-[#EF4444]" bg="bg-red-50"/>
+        <Metric label="Unassigned" value={counts.unassigned} icon={XCircle} color="text-[#EF4444]" bg="bg-red-50"/>
       </div>
 
       <Card>
@@ -264,6 +267,13 @@ export default function ApplicationsPage() {
             <option value="">All statuses</option>
             {statuses.map((item) => <option key={item} value={item}>{pretty(item)}</option>)}
           </select>
+          {user.role === "admin" && (
+            <select value={assignment} onChange={(event) => setAssignment(event.target.value)} className="h-11 rounded-xl border border-[#DDE5EF] bg-white px-4 text-sm">
+              <option value="">All assignments</option>
+              <option value="unassigned">Unassigned only</option>
+              <option value="assigned">Assigned only</option>
+            </select>
+          )}
         </div>
       </Card>
 

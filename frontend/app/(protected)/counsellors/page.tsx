@@ -13,7 +13,7 @@ import { Modal } from "@/components/ui/Modal";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import { Textarea } from "@/components/ui/Textarea";
 import { createAppointment } from "@/lib/api/appointment.api";
-import { getUsers } from "@/lib/api/admin.api";
+import { createUser, getUsers } from "@/lib/api/admin.api";
 import { createCounsellor, deleteCounsellor, getCounsellors, updateCounsellor, type Counsellor, type CreateCounsellorPayload, type UpdateCounsellorPayload } from "@/lib/api/counsellor.api";
 import type { AdminUser } from "@/lib/api/types";
 
@@ -31,6 +31,8 @@ type CounsellorForm = {
   hourlyRate: string;
   imageUrl: string;
   available: boolean;
+  username: string;
+  password: string;
 };
 
 const emptyCounsellorForm: CounsellorForm = {
@@ -44,6 +46,8 @@ const emptyCounsellorForm: CounsellorForm = {
   hourlyRate: "0",
   imageUrl: "",
   available: true,
+  username: "",
+  password: "",
 };
 
 function formFromCounsellor(counsellor: Counsellor): CounsellorForm {
@@ -58,6 +62,8 @@ function formFromCounsellor(counsellor: Counsellor): CounsellorForm {
     hourlyRate: String(counsellor.hourlyRate),
     imageUrl: counsellor.imageUrl || "",
     available: counsellor.available,
+    username: "",
+    password: "",
   };
 }
 
@@ -170,9 +176,26 @@ export default function CounsellorsPage() {
     event.preventDefault();
     try {
       setSaving(true);
-      const response = editing
-        ? await updateCounsellor(editing.id, updatePayload())
-        : await createCounsellor(createPayload());
+      let response;
+      if (editing) {
+        response = await updateCounsellor(editing.id, updatePayload());
+      } else if (form.userId) {
+        response = await createCounsellor(createPayload());
+      } else {
+        const userResponse = await createUser({
+          fullName: form.fullName.trim(),
+          username: form.username.trim(),
+          email: form.email.trim(),
+          phoneNumber: form.phoneNumber.trim(),
+          password: form.password,
+          role: "counsellor",
+        });
+        if (!userResponse.success) throw new Error(userResponse.message);
+        const counsellorResult = await getCounsellors();
+        const profile = (counsellorResult.data || []).find((item) => item.userId === userResponse.data.id);
+        if (!profile) throw new Error("Counsellor profile was not created for the new account");
+        response = await updateCounsellor(profile.id, updatePayload());
+      }
       setCounsellors((current) => editing
         ? current.map((item) => item.id === response.data.id ? response.data : item)
         : [response.data, ...current]);
@@ -269,8 +292,10 @@ export default function CounsellorsPage() {
                   <Button variant="secondary" size="sm" onClick={() => openEdit(item)}><Edit className="h-4 w-4"/>Edit</Button>
                   <Button variant="danger" size="sm" onClick={() => void removeCounsellor(item)}><Trash2 className="h-4 w-4"/></Button>
                 </div>
+              ) : user.role === "student" ? (
+                <Button disabled={!item.available} onClick={() => setSelected(item)} size="sm"><CalendarPlus className="h-4 w-4"/>Book</Button>
               ) : (
-                <Button disabled={!item.available || user.role !== "student"} onClick={() => setSelected(item)} size="sm"><CalendarPlus className="h-4 w-4"/>Book</Button>
+                <span className="text-sm text-[#94A3B8]">View only</span>
               )}
             </div>
           </Card>
@@ -292,12 +317,18 @@ export default function CounsellorsPage() {
         <form onSubmit={saveCounsellor} className="space-y-4">
           {!editing && (
             <label className="block text-sm font-medium text-[#0F172A]">
-              Counsellor User
-              <select required value={form.userId} onChange={(event) => selectUser(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-[#DDE5EF] bg-white px-4 text-sm">
-                <option value="">Select a counsellor account</option>
+              Existing Counsellor Account
+              <select value={form.userId} onChange={(event) => selectUser(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-[#DDE5EF] bg-white px-4 text-sm">
+                <option value="">Create a new counsellor account</option>
                 {counsellorUsers.map((item) => <option key={item.id} value={item.id}>{item.fullName} · {item.email}</option>)}
               </select>
             </label>
+          )}
+          {!editing && !form.userId && (
+            <div className="grid gap-4 md:grid-cols-2">
+              <Input required label="Username" value={form.username} onChange={(event) => updateForm("username", event.target.value)} />
+              <Input required label="Temporary Password" type="password" minLength={6} value={form.password} onChange={(event) => updateForm("password", event.target.value)} />
+            </div>
           )}
           <div className="grid gap-4 md:grid-cols-2">
             <Input required label="Full Name" value={form.fullName} onChange={(event) => updateForm("fullName", event.target.value)} />

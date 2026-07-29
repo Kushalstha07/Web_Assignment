@@ -8,6 +8,8 @@ const secretKey = process.env.SECRET_KEY || "edu-global-jwt-secret-key-2024-v1";
 const token = jsonwebtoken.sign({ id: testUserId, role: "student" }, secretKey, { expiresIn: "1h" });
 const onboardingUserId = new mongoose.Types.ObjectId().toString();
 const onboardingToken = jsonwebtoken.sign({ id: onboardingUserId, role: "student" }, secretKey, { expiresIn: "1h" });
+const updateUserId = new mongoose.Types.ObjectId().toString();
+const updateToken = jsonwebtoken.sign({ id: updateUserId, role: "student" }, secretKey, { expiresIn: "1h" });
 
 describe("Academic Profile API", () => {
   describe("GET /api/v1/academic-profile", () => {
@@ -57,6 +59,39 @@ describe("Academic Profile API", () => {
         .set("Authorization", `Bearer ${token}`)
         .send({ institution: "" });
       expect(res.status).toBe(400);
+    });
+  });
+
+  describe("PUT /api/v1/academic-profile", () => {
+    it("allows a student to edit an existing academic profile", async () => {
+      const created = await request(app)
+        .post("/api/v1/academic-profile")
+        .set("Authorization", `Bearer ${updateToken}`)
+        .send({
+          highestQualification: "bachelor",
+          institution: "Original University",
+          graduationYear: 2024,
+          fieldOfStudy: "Computer Science",
+        });
+
+      expect(created.status).toBe(201);
+      const originalStrength = created.body.data.profileStrength;
+
+      const updated = await request(app)
+        .put("/api/v1/academic-profile")
+        .set("Authorization", `Bearer ${updateToken}`)
+        .send({
+          institution: "Updated University",
+          gpa: 3.6,
+          preferredCountries: ["canada", "australia"],
+          tuitionBudget: "20k-35k",
+        });
+
+      expect(updated.status).toBe(200);
+      expect(updated.body.data.institution).toBe("Updated University");
+      expect(updated.body.data.gpa).toBe(3.6);
+      expect(updated.body.data.preferredCountries).toEqual(["canada", "australia"]);
+      expect(updated.body.data.profileStrength).toBeGreaterThan(originalStrength);
     });
   });
 

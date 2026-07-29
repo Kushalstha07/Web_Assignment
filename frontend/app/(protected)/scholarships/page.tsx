@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Award, CalendarDays, ExternalLink, Pencil, Plus, Save, Search, Sparkles, Trash2, X } from "lucide-react";
+import { Award, CalendarDays, FileCheck2, Pencil, Plus, Save, Search, Sparkles, Trash2, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -12,7 +12,7 @@ import { Select } from "@/components/ui/Select";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import { Textarea } from "@/components/ui/Textarea";
 import { getScholarshipAdvice } from "@/lib/api/ai.api";
-import { createScholarship, deleteScholarship, getScholarships, updateScholarship, type Scholarship } from "@/lib/api/scholarship.api";
+import { applyForScholarship, createScholarship, deleteScholarship, getScholarshipApplications, getScholarships, updateScholarship, updateScholarshipApplication, type Scholarship, type ScholarshipApplication } from "@/lib/api/scholarship.api";
 
 const types = ["merit-based", "need-based", "country-specific", "university-specific", "government", "private"];
 const countries = ["usa", "uk", "canada", "australia", "europe"];
@@ -72,6 +72,7 @@ const payloadFromForm = (form: ScholarshipForm) => ({
   applicationUrl: form.applicationUrl.trim() || undefined,
   imageUrl: form.imageUrl.trim() || undefined,
 });
+const emptyApplicationForm = { statement: "", academicSummary: "", financialNeed: "" };
 
 export default function ScholarshipsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -89,6 +90,11 @@ export default function ScholarshipsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<ScholarshipForm>(emptyForm);
+  const [applications, setApplications] = useState<ScholarshipApplication[]>([]);
+  const [selectedScholarship, setSelectedScholarship] = useState<Scholarship | null>(null);
+  const [applicationForm, setApplicationForm] = useState(emptyApplicationForm);
+  const [applicationError, setApplicationError] = useState("");
+  const [applicationMessage, setApplicationMessage] = useState("");
   const [aiAdvice, setAiAdvice] = useState("");
   const [aiError, setAiError] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
@@ -99,10 +105,13 @@ export default function ScholarshipsPage() {
       setLoading(true);
       const response = await getScholarships({ search: search || undefined, type: type || undefined, country: country || undefined, status: status || undefined, limit: 50 });
       if (!response.success) throw new Error(response.message);
-      setItems(response.data || []); setError("");
+      const applicationResponse = user ? await getScholarshipApplications() : null;
+      setItems(response.data || []);
+      setApplications(applicationResponse?.data || []);
+      setError("");
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to load scholarships"); }
     finally { setLoading(false); }
-  }, [search, type, country, status]);
+  }, [search, type, country, status, user]);
   useEffect(() => { if (!user) return; const timer = window.setTimeout(() => void load(), 250); return () => window.clearTimeout(timer); }, [user, load]);
 
   if (authLoading) return <SkeletonCard/>;
@@ -110,6 +119,7 @@ export default function ScholarshipsPage() {
   const isAdmin = user.role === "admin";
   const canApply = user.role === "student";
   const totalValue = items.reduce((sum, item) => sum + item.amount, 0);
+  const applicationByScholarship = new Map(applications.filter((item) => item.studentId === user.id).map((item) => [item.scholarshipId, item]));
   const resetForm = () => { setForm(emptyForm); setEditingId(null); setFormOpen(false); setFormError(""); };
   const startCreate = () => { setAdminMessage(""); setFormError(""); setEditingId(null); setForm(emptyForm); setFormOpen(true); };
   const startEdit = (item: Scholarship) => { setAdminMessage(""); setFormError(""); setEditingId(item.id); setForm(formFromScholarship(item)); setFormOpen(true); };
@@ -165,6 +175,47 @@ export default function ScholarshipsPage() {
       setAiLoading(false);
     }
   };
+  const openApply = (item: Scholarship) => {
+    setSelectedScholarship(item);
+    setApplicationForm(emptyApplicationForm);
+    setApplicationError("");
+    setApplicationMessage("");
+  };
+  const submitScholarshipApplication = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedScholarship) return;
+    setApplicationError("");
+    setApplicationMessage("");
+    try {
+      setSaving(true);
+      const response = await applyForScholarship(selectedScholarship.id, {
+        statement: applicationForm.statement,
+        academicSummary: applicationForm.academicSummary || undefined,
+        financialNeed: applicationForm.financialNeed || undefined,
+      });
+      if (!response.success) throw new Error(response.message);
+      setApplications((current) => [response.data, ...current]);
+      setSelectedScholarship(null);
+      setApplicationMessage("Scholarship application submitted.");
+    } catch (cause) {
+      setApplicationError(cause instanceof Error ? cause.message : "Unable to submit scholarship application.");
+    } finally {
+      setSaving(false);
+    }
+  };
+  const reviewScholarshipApplication = async (id: string, nextStatus: ScholarshipApplication["status"], notes?: string) => {
+    try {
+      setSaving(true);
+      const response = await updateScholarshipApplication(id, { status: nextStatus, notes });
+      if (!response.success) throw new Error(response.message);
+      setApplications((current) => current.map((item) => item.id === id ? response.data : item));
+      setAdminMessage("Scholarship application updated.");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to update scholarship application.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return <div className="space-y-6">
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -191,13 +242,31 @@ export default function ScholarshipsPage() {
       </form>
     </Card>}
     {adminMessage && <div className="rounded-xl bg-green-50 p-3 text-sm text-green-700">{adminMessage}</div>}
+    {applicationMessage && <div className="rounded-xl bg-green-50 p-3 text-sm text-green-700">{applicationMessage}</div>}
+    {isAdmin && <Card>
+      <div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="flex items-center gap-2 font-bold text-[#0F172A]"><FileCheck2 className="h-5 w-5 text-[#2563EB]"/>Scholarship applications</h2><p className="text-sm text-[#64748B]">Review student submissions without sending them outside the system.</p></div><Badge variant="info">{applications.length}</Badge></div>
+      <div className="space-y-3">{applications.slice(0, 8).map((application) => <div key={application.id} className="rounded-xl border border-[#E7EDF6] p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><p className="font-semibold text-[#0F172A]">{application.scholarshipName || "Scholarship"}</p><p className="text-sm text-[#64748B]">{application.studentName || application.studentId} · {new Date(application.submittedAt).toLocaleDateString()}</p></div><Badge variant={application.status === "approved" ? "success" : application.status === "rejected" ? "danger" : application.status === "under-review" ? "warning" : "info"}>{pretty(application.status)}</Badge></div>
+        <p className="mt-3 line-clamp-2 text-sm text-[#64748B]">{application.statement}</p>
+        <div className="mt-3 flex flex-wrap gap-2"><Button size="sm" variant="secondary" loading={saving} onClick={() => void reviewScholarshipApplication(application.id, "under-review", application.notes)}>Mark review</Button><Button size="sm" loading={saving} onClick={() => void reviewScholarshipApplication(application.id, "approved", application.notes)}>Approve</Button><Button size="sm" variant="danger" loading={saving} onClick={() => void reviewScholarshipApplication(application.id, "rejected", application.notes)}>Reject</Button></div>
+      </div>)}{applications.length === 0 && <p className="text-center text-sm text-[#64748B]">No scholarship applications yet.</p>}</div>
+    </Card>}
     <Card><div className="grid gap-3 md:grid-cols-4"><div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]"/><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search scholarships" className="pl-10"/></div><select value={type} onChange={(event) => setType(event.target.value)} className="rounded-xl border px-3 text-sm"><option value="">All types</option>{types.map((item) => <option key={item} value={item}>{pretty(item)}</option>)}</select><select value={country} onChange={(event) => setCountry(event.target.value)} className="rounded-xl border px-3 text-sm"><option value="">All countries</option>{countries.map((item) => <option key={item} value={item}>{item.toUpperCase()}</option>)}</select><select value={status} onChange={(event) => setStatus(event.target.value)} className="rounded-xl border px-3 text-sm"><option value="">All statuses</option><option value="active">Active</option><option value="upcoming">Upcoming</option><option value="expired">Expired</option></select></div></Card>
     {error && <div className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</div>}
     {loading ? <div className="grid gap-6 md:grid-cols-3">{[1,2,3].map((item) => <SkeletonCard key={item}/>)}</div> : <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">{items.map((item) => <Card key={item.id} className="flex flex-col">
       <div className="flex items-start justify-between gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EEF5FF]"><Award className="h-5 w-5 text-[#2563EB]"/></div><Badge variant={item.status === "active" ? "success" : item.status === "upcoming" ? "info" : "default"}>{pretty(item.status)}</Badge></div><h2 className="mt-4 font-bold text-[#0F172A]">{item.name}</h2><p className="text-sm text-[#64748B]">{item.provider}</p><p className="mt-3 text-2xl font-bold text-[#22C55E]">{item.currency} {item.amount.toLocaleString()}</p><p className="mt-2 line-clamp-3 text-sm text-[#64748B]">{item.description || item.eligibility}</p>
       <div className="mt-4 flex flex-wrap gap-2">{item.countries.map((value) => <span key={value} className="rounded-full bg-[#F8FAFC] px-2 py-1 text-xs">{value.toUpperCase()}</span>)}<span className="rounded-full bg-purple-50 px-2 py-1 text-xs text-[#7C3AED]">{pretty(item.type)}</span></div>
-      <div className="mt-auto flex items-center justify-between gap-3 border-t pt-4"><span className="flex items-center gap-1 text-xs text-[#64748B]"><CalendarDays className="h-4 w-4"/>{item.deadline ? new Date(item.deadline).toLocaleDateString() : "Open deadline"}</span><div className="flex flex-wrap justify-end gap-2">{isAdmin && <><Button size="sm" variant="secondary" onClick={() => startEdit(item)}><Pencil className="h-4 w-4"/>Edit</Button><Button size="sm" variant="danger" onClick={() => void handleDelete(item)}><Trash2 className="h-4 w-4"/>Delete</Button></>}{canApply && item.applicationUrl && <Button size="sm" onClick={() => window.open(item.applicationUrl, "_blank", "noopener,noreferrer")}>Apply <ExternalLink className="h-4 w-4"/></Button>}</div></div>
+      <div className="mt-auto flex items-center justify-between gap-3 border-t pt-4"><span className="flex items-center gap-1 text-xs text-[#64748B]"><CalendarDays className="h-4 w-4"/>{item.deadline ? new Date(item.deadline).toLocaleDateString() : "Open deadline"}</span><div className="flex flex-wrap justify-end gap-2">{isAdmin && <><Button size="sm" variant="secondary" onClick={() => startEdit(item)}><Pencil className="h-4 w-4"/>Edit</Button><Button size="sm" variant="danger" onClick={() => void handleDelete(item)}><Trash2 className="h-4 w-4"/>Delete</Button></>}{canApply && (applicationByScholarship.has(item.id) ? <Badge variant="info">{pretty(applicationByScholarship.get(item.id)!.status)}</Badge> : <Button size="sm" disabled={item.status !== "active"} onClick={() => openApply(item)}>Apply</Button>)}</div></div>
     </Card>)}</div>}
     {!loading && items.length === 0 && <Card><p className="text-center text-sm text-[#64748B]">No scholarships match these filters.</p></Card>}
+    {canApply && selectedScholarship && <Card className="border-[#2563EB]/30">
+      <form onSubmit={submitScholarshipApplication} className="space-y-4">
+        <div className="flex items-center justify-between gap-3"><div><h2 className="font-bold text-[#0F172A]">Apply for {selectedScholarship.name}</h2><p className="text-sm text-[#64748B]">Submit your application inside EduGlobal.</p></div><Button type="button" variant="ghost" size="sm" onClick={() => setSelectedScholarship(null)}><X className="h-4 w-4"/>Close</Button></div>
+        {applicationError && <div className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{applicationError}</div>}
+        <Textarea required label="Personal statement" value={applicationForm.statement} onChange={(event) => setApplicationForm((current) => ({ ...current, statement: event.target.value }))} placeholder="Why are you a strong fit for this scholarship?"/>
+        <div className="grid gap-4 md:grid-cols-2"><Textarea label="Academic summary" value={applicationForm.academicSummary} onChange={(event) => setApplicationForm((current) => ({ ...current, academicSummary: event.target.value }))} placeholder="GPA, test scores, achievements"/><Textarea label="Financial need" value={applicationForm.financialNeed} onChange={(event) => setApplicationForm((current) => ({ ...current, financialNeed: event.target.value }))} placeholder="Briefly explain your funding need"/></div>
+        <div className="flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => setSelectedScholarship(null)}>Cancel</Button><Button type="submit" loading={saving}>Submit application</Button></div>
+      </form>
+    </Card>}
   </div>;
 }
