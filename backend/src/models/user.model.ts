@@ -50,31 +50,31 @@ const UserMongoSchema: Schema<IUser> = new Schema(
     studyLevel: {
       type: String,
       enum: studyLevels,
-      required: true,
+      required: false,
     },
 
     destination: {
       type: String,
       enum: destinations,
-      required: true,
+      required: false,
     },
 
     fieldOfStudy: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
     },
 
     intake: {
       type: String,
       enum: intakes,
-      required: true,
+      required: false,
     },
 
     budget: {
       type: String,
       enum: budgets,
-      required: true,
+      required: false,
     },
 
     password: {

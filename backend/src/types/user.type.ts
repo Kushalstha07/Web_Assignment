@@ -24,19 +24,7 @@ export const budgets = [
   "35k-plus",
 ] as const;
 
-export const UserSchema = z.object({
-  fullName: z.string().min(1, "Full name is required"),
-
-  username: z
-    .string()
-    .min(3, "Username must be at least 3 characters long"),
-
-  email: z.string().email("Invalid email address"),
-
-  phoneNumber: z
-    .string()
-    .min(10, "Phone number must be at least 10 digits long"),
-
+export const StudentProfileSchema = z.object({
   studyLevel: z.enum(studyLevels, {
     error: "Study level is required",
   }),
@@ -54,6 +42,30 @@ export const UserSchema = z.object({
   budget: z.enum(budgets, {
     error: "Budget range is required",
   }),
+});
+
+export const UserSchema = z.object({
+  fullName: z.string().min(1, "Full name is required"),
+
+  username: z
+    .string()
+    .min(3, "Username must be at least 3 characters long"),
+
+  email: z.string().email("Invalid email address"),
+
+  phoneNumber: z
+    .string()
+    .min(10, "Phone number must be at least 10 digits long"),
+
+  studyLevel: z.enum(studyLevels).optional(),
+
+  destination: z.enum(destinations).optional(),
+
+  fieldOfStudy: z.string().min(1, "Field of study is required").optional(),
+
+  intake: z.enum(intakes).optional(),
+
+  budget: z.enum(budgets).optional(),
 
   password: z
     .string()

@@ -1,18 +1,13 @@
 import { z } from "zod";
-import { UserSchema, studyLevels, destinations, intakes, budgets } from "../types/user.type";
+import { UserSchema, StudentProfileSchema, studyLevels, destinations, intakes, budgets } from "../types/user.type";
 
 export const CreateUserDTO = UserSchema.pick({
   fullName: true,
   username: true,
   email: true,
   phoneNumber: true,
-  studyLevel: true,
-  destination: true,
-  fieldOfStudy: true,
-  intake: true,
-  budget: true,
   password: true,
-});
+}).merge(StudentProfileSchema);
 
 export type CreateUserDTO = z.infer<typeof CreateUserDTO>;
 

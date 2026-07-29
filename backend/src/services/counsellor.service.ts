@@ -65,6 +65,31 @@ function toSafeCounsellor(c: ICounsellor): SafeCounsellor {
 }
 
 export class CounsellorService {
+  async ensureProfileForUserId(userId: string): Promise<SafeCounsellor | null> {
+    const existing = await counsellorRepo.getByUserId(userId);
+    if (existing) return toSafeCounsellor(existing);
+
+    const user = await UserModel.findById(userId);
+    if (!user || user.role !== "counsellor") return null;
+
+    const created = await counsellorRepo.create({
+      userId: user._id.toString(),
+      fullName: user.fullName,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      bio: "",
+      specialties: [],
+      yearsOfExperience: 0,
+      rating: 0,
+      reviewCount: 0,
+      hourlyRate: 0,
+      available: true,
+      imageUrl: user.profileImage || undefined,
+    });
+
+    return toSafeCounsellor(created);
+  }
+
   async create(data: CreateCounsellorDTOType): Promise<SafeCounsellor> {
     const existing = await counsellorRepo.getByUserId(data.userId);
     if (existing) throw new HttpException(409, "Counsellor profile already exists for this user");
@@ -79,9 +104,9 @@ export class CounsellorService {
   }
 
   async getByUserId(userId: string): Promise<SafeCounsellor> {
-    const counsellor = await counsellorRepo.getByUserId(userId);
+    const counsellor = await this.ensureProfileForUserId(userId);
     if (!counsellor) throw new HttpException(404, "Counsellor profile not found");
-    return toSafeCounsellor(counsellor);
+    return counsellor;
   }
 
   async getAll(available?: boolean, specialty?: string): Promise<SafeCounsellor[]> {
@@ -93,10 +118,10 @@ export class CounsellorService {
     userId: string,
     search?: string,
   ): Promise<AssignedStudent[]> {
-    const counsellor = await counsellorRepo.getByUserId(userId);
+    const counsellor = await this.ensureProfileForUserId(userId);
     if (!counsellor) throw new HttpException(404, "Counsellor profile not found");
     const studentIds = await ApplicationModel.distinct("studentId", {
-      counsellorId: counsellor._id.toString(),
+      counsellorId: counsellor.id,
     });
     const filter: Record<string, unknown> = { _id: { $in: studentIds }, role: "student" };
     if (search) {
@@ -112,11 +137,11 @@ export class CounsellorService {
       username: student.username,
       email: student.email,
       phoneNumber: student.phoneNumber,
-      studyLevel: student.studyLevel,
-      destination: student.destination,
-      fieldOfStudy: student.fieldOfStudy,
-      intake: student.intake,
-      budget: student.budget,
+      studyLevel: student.studyLevel || "",
+      destination: student.destination || "",
+      fieldOfStudy: student.fieldOfStudy || "",
+      intake: student.intake || "",
+      budget: student.budget || "",
       role: "student",
       profileImage: student.profileImage || null,
       createdAt: student.createdAt.toISOString(),
@@ -139,9 +164,9 @@ export class CounsellorService {
     userId: string,
     data: UpdateCounsellorDTOType,
   ): Promise<SafeCounsellor> {
-    const counsellor = await counsellorRepo.getByUserId(userId);
+    const counsellor = await this.ensureProfileForUserId(userId);
     if (!counsellor) throw new HttpException(404, "Counsellor profile not found");
-    return this.update(counsellor._id.toString(), data);
+    return this.update(counsellor.id, data);
   }
 
   async delete(id: string): Promise<boolean> {

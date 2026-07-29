@@ -31,8 +31,10 @@ export default function AnalyticsPage() {
       }).catch((cause) => setError(cause instanceof Error ? cause.message : "Unable to load analytics")).finally(() => setLoading(false));
   }, [user]);
 
-  if (authLoading || loading) return <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[1,2,3,4].map((item) => <SkeletonCard key={item}/>)}</div>;
+  if (authLoading) return <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[1,2,3,4].map((item) => <SkeletonCard key={item}/>)}</div>;
   if (!user) return null;
+  if (user.role !== "admin") return <AdminGuard><div /></AdminGuard>;
+  if (loading) return <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[1,2,3,4].map((item) => <SkeletonCard key={item}/>)}</div>;
   const monthlyData: BarChartData[] = growth.map((item) => ({ name: item.month, value: item.count, color: "#2563EB" }));
   const regionalData: BarChartData[] = regional.map((item) => ({ name: item.country?.toUpperCase() || "Unknown", value: item.count, color: "#7C3AED" }));
   const topData: BarChartData[] = top.map((item) => ({ name: item.universityId.slice(-6), value: item.applicationCount, color: "#22C55E" }));

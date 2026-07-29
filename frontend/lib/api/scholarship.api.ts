@@ -27,6 +27,23 @@ export interface ScholarshipListResponse {
   meta?: { page: number; limit: number; total: number; totalPages: number };
 }
 
+export interface ScholarshipApplication {
+  id: string;
+  scholarshipId: string;
+  scholarshipName?: string;
+  studentId: string;
+  studentName?: string;
+  status: "submitted" | "under-review" | "approved" | "rejected" | "withdrawn";
+  statement: string;
+  academicSummary?: string;
+  financialNeed?: string;
+  notes?: string;
+  submittedAt: string;
+  reviewedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ScholarshipFilter {
   type?: string;
   country?: string;
@@ -67,4 +84,16 @@ export async function updateScholarship(id: string, data: Partial<Scholarship>):
 
 export async function deleteScholarship(id: string): Promise<{ success: boolean; message: string }> {
   return apiClient("DELETE", `/api/v1/scholarships/${id}`);
+}
+
+export async function applyForScholarship(id: string, data: { statement: string; academicSummary?: string; financialNeed?: string }): Promise<{ success: boolean; data: ScholarshipApplication; message: string }> {
+  return apiClient("POST", `/api/v1/scholarships/${id}/apply`, { body: data });
+}
+
+export async function getScholarshipApplications(): Promise<{ success: boolean; data: ScholarshipApplication[]; message: string }> {
+  return apiClient("GET", "/api/v1/scholarships/applications");
+}
+
+export async function updateScholarshipApplication(id: string, data: { status?: ScholarshipApplication["status"]; notes?: string }): Promise<{ success: boolean; data: ScholarshipApplication; message: string }> {
+  return apiClient("PATCH", `/api/v1/scholarships/applications/${id}`, { body: data });
 }

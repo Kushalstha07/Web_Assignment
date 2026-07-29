@@ -5,9 +5,10 @@ export async function getUsers(
   page: number = 1,
   limit: number = 10,
   search?: string,
+  role?: string,
 ): Promise<PaginatedResponse<AdminUser>> {
   return apiClient("GET", "/api/v1/admin/users", {
-    params: { page: String(page), limit: String(limit), ...(search ? { search } : {}) },
+    params: { page: String(page), limit: String(limit), ...(search ? { search } : {}), ...(role ? { role } : {}) },
   });
 }
 

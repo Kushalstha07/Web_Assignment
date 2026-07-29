@@ -39,14 +39,16 @@ export default function ReportsPage() {
   }, [user]);
 
   const reports = useMemo(() => [
-    { title: "Users", description: `${users.length} account records currently loaded`, icon: Users, rows: users.map((item) => ({ id: item.id, name: item.fullName, email: item.email, role: item.role, destination: item.destination, createdAt: item.createdAt })) },
+    { title: "Users", description: `${users.length} account records currently loaded`, icon: Users, rows: users.map((item) => ({ id: item.id, name: item.fullName, email: item.email, role: item.role, destination: item.destination || "", createdAt: item.createdAt })) },
     { title: "Applications", description: `${applications.length} application records currently loaded`, icon: FileText, rows: applications.map((item) => ({ id: item.id, studentId: item.studentId, universityId: item.universityId, program: item.program, status: item.status, stage: item.stage, updatedAt: item.updatedAt })) },
     { title: "Documents", description: `${documents.length} uploaded document records currently loaded`, icon: FileCheck, rows: documents.map((item) => ({ id: item.id, userId: item.userId, filename: item.originalName, category: item.category, status: item.status, createdAt: item.createdAt })) },
     { title: "Universities", description: `${universities.length} university records currently loaded`, icon: Building2, rows: universities.map((item) => ({ id: item.id, name: item.name, country: item.country, city: item.city, ranking: item.ranking, tuitionFee: item.tuitionFee, active: String(item.isActive) })) },
   ], [users, applications, documents, universities]);
 
-  if (authLoading || loading) return <div className="grid gap-4 md:grid-cols-2">{[1,2,3,4].map((item) => <SkeletonCard key={item}/>)}</div>;
+  if (authLoading) return <div className="grid gap-4 md:grid-cols-2">{[1,2,3,4].map((item) => <SkeletonCard key={item}/>)}</div>;
   if (!user) return null;
+  if (user.role !== "admin") return <AdminGuard><div /></AdminGuard>;
+  if (loading) return <div className="grid gap-4 md:grid-cols-2">{[1,2,3,4].map((item) => <SkeletonCard key={item}/>)}</div>;
 
   return <AdminGuard><div className="space-y-6">
     <div><h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">Reports</h1><p className="mt-1 text-sm text-[#64748B]">Download CSV exports generated from the current API records{loadedAt ? ` · refreshed ${loadedAt.toLocaleString()}` : ""}.</p></div>

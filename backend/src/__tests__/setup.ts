@@ -7,9 +7,9 @@ beforeAll(async () => {
   mongoServer = await MongoMemoryServer.create();
   const uri = mongoServer.getUri();
   await mongoose.connect(uri);
-});
+}, 30_000);
 
 afterAll(async () => {
   await mongoose.disconnect();
   await mongoServer.stop();
-});
+}, 30_000);

@@ -190,8 +190,8 @@ export default function StudentsPage() {
                           {u.role.charAt(0).toUpperCase() + u.role.slice(1)}
                         </span>
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-[#64748B]">{u.destination.charAt(0).toUpperCase() + u.destination.slice(1)}</td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-[#64748B]">{u.studyLevel.replace("-", " ").replace(/\b\w/g, (c) => c.toUpperCase())}</td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-[#64748B]">{u.destination ? u.destination.charAt(0).toUpperCase() + u.destination.slice(1) : "Not set"}</td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-[#64748B]">{u.studyLevel ? u.studyLevel.replace("-", " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Not set"}</td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-[#64748B]">{new Date(u.createdAt).toLocaleDateString()}</td>
                     </tr>
                   ))}

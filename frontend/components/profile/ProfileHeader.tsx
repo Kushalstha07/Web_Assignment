@@ -6,14 +6,22 @@ interface ProfileHeaderProps {
   user: {
     fullName: string;
     profileImage: string | null;
-    studyLevel: string;
-    destination: string;
+    role: string;
+    studyLevel?: string;
+    destination?: string;
   };
   completion: number;
   onEdit: () => void;
 }
 
+function pretty(value?: string) {
+  if (!value) return "";
+  return value.charAt(0).toUpperCase() + value.slice(1).replace("-", " ");
+}
+
 export default function ProfileHeader({ user, completion, onEdit }: ProfileHeaderProps) {
+  const isStudent = user.role === "student";
+
   return (
     <div className="flex items-center gap-6 rounded-2xl bg-white p-8 shadow-sm" style={{ boxShadow: "0px 8px 30px rgba(0,0,0,.05)" }}>
       {/* Profile Picture */}
@@ -50,27 +58,34 @@ export default function ProfileHeader({ user, completion, onEdit }: ProfileHeade
       <div className="flex-1">
         <h1 className="text-2xl font-bold text-[#172B4D]">{user.fullName}</h1>
         <p className="mt-1 text-sm text-[#6B7280]">
-          {user.studyLevel.charAt(0).toUpperCase() + user.studyLevel.slice(1).replace("-", " ")} Applicant
+          {isStudent ? `${pretty(user.studyLevel)} Applicant` : pretty(user.role)}
         </p>
-        <p className="text-sm text-[#6B7280]">
-          {user.destination.charAt(0).toUpperCase() + user.destination.slice(1)}
-        </p>
+        {isStudent && <p className="text-sm text-[#6B7280]">{pretty(user.destination)}</p>}
       </div>
 
       {/* Completion + Actions */}
       <div className="w-[320px]">
-        <div className="flex items-center justify-between">
+        {isStudent ? (
+          <>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-[#6B7280]">Profile Completion</p>
+                <p className="text-2xl font-bold text-[#1565D8]">{completion}%</p>
+              </div>
+            </div>
+            <div className="mt-2 h-2 w-full rounded-full bg-[#E8EEF7]">
+              <div
+                className="h-2 rounded-full bg-[#1565D8] transition-all"
+                style={{ width: `${completion}%` }}
+              />
+            </div>
+          </>
+        ) : (
           <div>
-            <p className="text-sm font-medium text-[#6B7280]">Profile Completion</p>
-            <p className="text-2xl font-bold text-[#1565D8]">{completion}%</p>
+            <p className="text-sm font-medium text-[#6B7280]">Account Type</p>
+            <p className="text-2xl font-bold text-[#1565D8]">{pretty(user.role)}</p>
           </div>
-        </div>
-        <div className="mt-2 h-2 w-full rounded-full bg-[#E8EEF7]">
-          <div
-            className="h-2 rounded-full bg-[#1565D8] transition-all"
-            style={{ width: `${completion}%` }}
-          />
-        </div>
+        )}
         <div className="mt-4 flex gap-3">
           <button
             onClick={onEdit}

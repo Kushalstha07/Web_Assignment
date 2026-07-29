@@ -132,8 +132,8 @@ export default function Step2Page() {
               Transcript / Marksheet (optional)
             </label>
             <FileDropzone
-              accept="application/pdf,image/*"
-              maxSize={5 * 1024 * 1024}
+              accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,image/jpeg,image/png,image/webp"
+              maxSize={10 * 1024 * 1024}
               onFilesSelected={(files) => setTranscriptFile(files[0] || null)}
               label="Drag & drop your transcript here, or click to browse"
             />

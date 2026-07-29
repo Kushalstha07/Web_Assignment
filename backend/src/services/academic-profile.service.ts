@@ -72,7 +72,15 @@ export class AcademicProfileService {
   }
 
   async updateProfile(userId: string, update: UpdateAcademicProfileDTO): Promise<SafeAcademicProfile> {
-    const updated = await profileRepo.updateProfile(userId, update);
+    const existing = await profileRepo.getByUserId(userId);
+    if (!existing) {
+      throw new HttpException(404, "Profile not found");
+    }
+    const values = { ...existing, ...update };
+    const updated = await profileRepo.updateProfile(userId, {
+      ...update,
+      profileStrength: this.calculateProfileStrength(values),
+    });
     if (!updated) {
       throw new HttpException(404, "Profile not found");
     }

@@ -42,6 +42,10 @@ export async function getMyDocuments(): Promise<DocumentListResponse> {
   return apiClient("GET", "/api/v1/documents");
 }
 
+export async function getStudentDocuments(studentId: string): Promise<DocumentListResponse> {
+  return apiClient("GET", `/api/v1/documents/student/${studentId}`);
+}
+
 export async function getAllDocuments(page = 1, limit = 10, status?: string): Promise<DocumentListResponse> {
   const params: Record<string, string> = { page: String(page), limit: String(limit) };
   if (status) params.status = status;

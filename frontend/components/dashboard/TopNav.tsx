@@ -19,6 +19,7 @@ const breadcrumbMap: Record<string, string> = {
   "/analytics": "Analytics",
   "/appointments": "Appointments",
   "/messages": "Messages",
+  "/ai-chat": "AI Chat",
   "/settings": "Settings",
   "/profile": "Profile",
   "/change-password": "Change Password",

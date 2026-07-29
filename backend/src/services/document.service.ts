@@ -8,8 +8,11 @@ import path from "path";
 import { access } from "fs/promises";
 import { DOCUMENT_UPLOAD_DIRECTORY } from "../configs/storage";
 import { notificationService } from "./notification.service";
+import { CounsellorMongoRepository } from "../repositories/counsellor.repository";
+import { ApplicationModel } from "../models/application.model";
 
 const docRepo = new DocumentMongoRepository();
+const counsellorRepo = new CounsellorMongoRepository();
 
 export type SafeDocument = {
   id: string;
@@ -49,6 +52,25 @@ function toSafeDocument(d: IDocument): SafeDocument {
 }
 
 export class DocumentService {
+  private async canAccessStudentDocuments(
+    studentId: string,
+    userId: string,
+    role: string,
+  ): Promise<boolean> {
+    if (role === "admin") return true;
+    if (studentId === userId) return true;
+    if (role !== "counsellor") return false;
+
+    const counsellor = await counsellorRepo.getByUserId(userId);
+    if (!counsellor) return false;
+
+    const assignedApplication = await ApplicationModel.exists({
+      studentId,
+      counsellorId: counsellor._id.toString(),
+    });
+    return Boolean(assignedApplication);
+  }
+
   async upload(data: CreateDocumentDTOType, userId: string, file: Express.Multer.File): Promise<SafeDocument> {
     const docData: DocumentType = {
       userId,
@@ -68,8 +90,8 @@ export class DocumentService {
   async getById(id: string, userId: string, role: string): Promise<SafeDocument> {
     const doc = await docRepo.getById(id);
     if (!doc) throw new HttpException(404, "Document not found");
-    if (role !== "admin" && doc.userId !== userId) {
-      throw new HttpException(403, "You can only access your own documents");
+    if (!(await this.canAccessStudentDocuments(doc.userId, userId, role))) {
+      throw new HttpException(403, "You can only access documents for your assigned students");
     }
     return toSafeDocument(doc);
   }
@@ -81,8 +103,8 @@ export class DocumentService {
   ): Promise<{ path: string; mimeType: string; originalName: string }> {
     const doc = await docRepo.getById(id);
     if (!doc) throw new HttpException(404, "Document not found");
-    if (role !== "admin" && doc.userId !== userId) {
-      throw new HttpException(403, "You can only download your own documents");
+    if (!(await this.canAccessStudentDocuments(doc.userId, userId, role))) {
+      throw new HttpException(403, "You can only download documents for your assigned students");
     }
 
     const filePath = path.join(
@@ -104,6 +126,15 @@ export class DocumentService {
 
   async getMyDocuments(userId: string): Promise<SafeDocument[]> {
     const docs = await docRepo.getByUserId(userId);
+    return docs.map(toSafeDocument);
+  }
+
+  async getStudentDocuments(studentId: string, userId: string, role: string): Promise<SafeDocument[]> {
+    if (!(await this.canAccessStudentDocuments(studentId, userId, role))) {
+      throw new HttpException(403, "You can only access documents for your assigned students");
+    }
+
+    const docs = await docRepo.getByUserId(studentId);
     return docs.map(toSafeDocument);
   }
 

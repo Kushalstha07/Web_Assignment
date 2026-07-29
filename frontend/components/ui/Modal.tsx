@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef, useEffect, useCallback, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 
@@ -41,27 +42,28 @@ const Modal = forwardRef<HTMLDivElement, ModalProps>(
       };
     }, [isOpen, handleKeyDown]);
 
-    if (!isOpen) return null;
+    if (!isOpen || typeof document === "undefined") return null;
 
-    return (
+    return createPortal(
       <div
         ref={overlayRef}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+        className="fixed inset-0 z-50 overflow-y-auto bg-black/50 p-4 backdrop-blur-sm"
         onClick={(e) => {
           if (e.target === overlayRef.current) onClose();
         }}
       >
-        <div
-          ref={ref}
-          role="dialog"
-          aria-modal="true"
-          aria-label={title}
-          className={cn(
-            "relative w-full rounded-[20px] bg-white p-6 shadow-xl animate-in fade-in zoom-in-95 duration-200",
-            sizeClasses[size],
-            className,
-          )}
-        >
+        <div className="flex min-h-full items-start justify-center py-4 sm:py-8">
+          <div
+            ref={ref}
+            role="dialog"
+            aria-modal="true"
+            aria-label={title}
+            className={cn(
+              "relative max-h-[calc(100vh-4rem)] w-full overflow-y-auto rounded-[20px] bg-white p-6 shadow-xl animate-in fade-in zoom-in-95 duration-200",
+              sizeClasses[size],
+              className,
+            )}
+          >
           {/* Header */}
           {title && (
             <div className="mb-4 flex items-center justify-between">
@@ -87,8 +89,10 @@ const Modal = forwardRef<HTMLDivElement, ModalProps>(
 
           {/* Body */}
           {children}
+          </div>
         </div>
-      </div>
+      </div>,
+      document.body,
     );
   },
 );

@@ -127,17 +127,37 @@ function MessagesWorkspace() {
   async function startConversation(event: FormEvent) {
     event.preventDefault();
     const contact = contacts.find((item) => item.id === contactId);
-    if (!contact) return;
-    try {
-      setCreating(true);
-      const response = await createConversation([contact.id], conversationTitle.trim() || contact.name);
-      setConversations((current) => [response.data, ...current]);
-      setSelectedId(response.data.id);
+    if (!contact || !user) return;
+
+    const existing = conversations.find((conversation) =>
+      conversation.participants.length === 2 &&
+      conversation.participants.includes(user.id) &&
+      conversation.participants.includes(contact.id),
+    );
+
+    const closeComposer = () => {
       setNewOpen(false);
       setContactId("");
       setConversationTitle("");
       setContactQuery("");
       setError("");
+    };
+
+    if (existing) {
+      setSelectedId(existing.id);
+      closeComposer();
+      return;
+    }
+
+    try {
+      setCreating(true);
+      const response = await createConversation([contact.id], conversationTitle.trim() || contact.name);
+      setConversations((current) => {
+        const withoutDuplicate = current.filter((conversation) => conversation.id !== response.data.id);
+        return [response.data, ...withoutDuplicate];
+      });
+      setSelectedId(response.data.id);
+      closeComposer();
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to start conversation"); }
     finally { setCreating(false); }
   }
