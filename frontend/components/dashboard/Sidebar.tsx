@@ -3,271 +3,124 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { useState } from "react";
 import {
-  LayoutDashboard,
-  Users,
-  FileText,
-  Building2,
-  Award,
-  Sparkles,
-  FileCheck,
-  Plane,
-  UserCheck,
-  Calendar,
-  MessageSquare,
-  BarChart3,
-  LineChart,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-  LogOut,
-  Shield,
-  GraduationCap,
-  BookOpen,
-  User,
+  Award, BarChart3, Building2, Calendar, ChevronLeft, ChevronRight, FileCheck,
+  FileText, LayoutDashboard, LineChart, LogOut, MessageSquare, Plane, Settings,
+  Shield, Sparkles, User, UserCheck, Users, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// ─── Admin Navigation ───
-const adminMainNav = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/students", label: "Students", icon: Users },
-  { href: "/applications", label: "Applications", icon: FileText },
-  { href: "/universities", label: "Universities", icon: Building2 },
-  { href: "/scholarships", label: "Scholarships", icon: Award },
-  { href: "/recommendations", label: "AI Recommendations", icon: Sparkles },
+type NavItem = { href: string; label: string; icon: React.ElementType };
+type NavGroup = { label?: string; items: NavItem[] };
+
+const adminGroups: NavGroup[] = [
+  { label: "Overview", items: [
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/students", label: "Students", icon: Users },
+    { href: "/applications", label: "Applications", icon: FileText },
+    { href: "/universities", label: "Universities", icon: Building2 },
+    { href: "/scholarships", label: "Scholarships", icon: Award },
+  ]},
+  { label: "Workflow", items: [
+    { href: "/verification", label: "Document Verification", icon: FileCheck },
+    { href: "/visa", label: "Visa Processing", icon: Plane },
+    { href: "/counsellors", label: "Counsellors", icon: UserCheck },
+    { href: "/appointments", label: "Appointments", icon: Calendar },
+    { href: "/messages", label: "Messages", icon: MessageSquare },
+  ]},
+  { label: "Insights & system", items: [
+    { href: "/reports", label: "Reports", icon: BarChart3 },
+    { href: "/analytics", label: "Analytics", icon: LineChart },
+    { href: "/admin/users", label: "User Management", icon: Shield },
+    { href: "/settings", label: "Settings", icon: Settings },
+  ]},
 ];
 
-const adminWorkflowNav = [
-  { href: "/verification", label: "Document Verification", icon: FileCheck },
-  { href: "/visa", label: "Visa Processing", icon: Plane },
-  { href: "/counsellors", label: "Counsellors", icon: UserCheck },
-  { href: "/appointments", label: "Appointments", icon: Calendar },
+const studentGroups: NavGroup[] = [
+  { items: [
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/applications", label: "My Applications", icon: FileText },
+    { href: "/universities", label: "Universities", icon: Building2 },
+    { href: "/scholarships", label: "Scholarships", icon: Award },
+    { href: "/recommendations", label: "Recommendations", icon: Sparkles },
+  ]},
+  { label: "Services", items: [
+    { href: "/appointments", label: "Book Appointment", icon: Calendar },
+    { href: "/messages", label: "Messages", icon: MessageSquare },
+    { href: "/profile", label: "My Profile", icon: User },
+    { href: "/settings", label: "Settings", icon: Settings },
+  ]},
 ];
 
-const adminBottomNav = [
-  { href: "/messages", label: "Messages", icon: MessageSquare },
-  { href: "/reports", label: "Reports", icon: BarChart3 },
-  { href: "/analytics", label: "Analytics", icon: LineChart },
-  { href: "/admin/users", label: "User Management", icon: Shield },
-  { href: "/settings", label: "Settings", icon: Settings },
+const counsellorGroups: NavGroup[] = [
+  { items: [
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/students", label: "Students", icon: Users },
+    { href: "/applications", label: "Applications", icon: FileText },
+    { href: "/appointments", label: "Appointments", icon: Calendar },
+    { href: "/messages", label: "Messages", icon: MessageSquare },
+  ]},
+  { label: "Account", items: [
+    { href: "/profile", label: "My Profile", icon: User },
+    { href: "/settings", label: "Settings", icon: Settings },
+  ]},
 ];
 
-// ─── Student Navigation ───
-const studentMainNav = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/applications", label: "My Applications", icon: FileText },
-  { href: "/universities", label: "Universities", icon: Building2 },
-  { href: "/scholarships", label: "Scholarships", icon: Award },
-];
-
-const studentServiceNav = [
-  { href: "/appointments", label: "Book Appointment", icon: Calendar },
-  { href: "/messages", label: "Messages", icon: MessageSquare },
-  { href: "/profile", label: "My Profile", icon: User },
-];
-
-const studentBottomNav = [
-  { href: "/settings", label: "Settings", icon: Settings },
-];
-
-function NavItem({
-  item,
-  isActive,
-  collapsed,
-}: {
-  item: { href: string; label: string; icon: React.ElementType };
-  isActive: boolean;
+interface SidebarProps {
   collapsed: boolean;
-}) {
-  const Icon = item.icon;
-  return (
-    <Link
-      href={item.href}
-      className={cn(
-        "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
-        isActive
-          ? "bg-[#EEF5FF] text-[#1565D8]"
-          : "text-[#6B7280] hover:bg-[#F8FAFC] hover:text-[#172B4D]",
-        collapsed && "justify-center px-2"
-      )}
-      title={collapsed ? item.label : undefined}
-    >
-      <Icon className={cn("h-5 w-5 shrink-0", isActive && "text-[#1565D8]")} />
-      {!collapsed && <span>{item.label}</span>}
-    </Link>
-  );
+  mobileOpen: boolean;
+  onToggle: () => void;
+  onClose: () => void;
 }
 
-function NavSection({
-  title,
-  items,
-  collapsed,
-  pathname,
-}: {
-  title?: string;
-  items: { href: string; label: string; icon: React.ElementType }[];
-  collapsed: boolean;
-  pathname: string;
-}) {
-  const isActive = (href: string) => {
-    if (href === "/dashboard") return pathname === "/dashboard";
-    return pathname.startsWith(href);
-  };
-
-  return (
-    <>
-      {title && !collapsed && (
-        <div className="px-3 mb-1">
-          <p className="px-3 text-xs font-semibold uppercase tracking-wider text-[#94A3B8]">
-            {title}
-          </p>
-        </div>
-      )}
-      <nav className="px-3 space-y-1">
-        {items.map((item) => (
-          <NavItem
-            key={item.href}
-            item={item}
-            isActive={isActive(item.href)}
-            collapsed={collapsed}
-          />
-        ))}
-      </nav>
-    </>
-  );
-}
-
-export default function Sidebar() {
+export default function Sidebar({ collapsed, mobileOpen, onToggle, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const [collapsed, setCollapsed] = useState(false);
-  const isAdmin = user?.role === "admin";
-  const isCounsellor = user?.role === "counsellor";
+  const groups = user?.role === "admin" ? adminGroups : user?.role === "counsellor" ? counsellorGroups : studentGroups;
+  const portalName = user?.role === "admin" ? "Admin workspace" : user?.role === "counsellor" ? "Counsellor workspace" : "Student portal";
 
-  return (
-    <aside
-      className={cn(
-        "fixed left-0 top-0 h-screen border-r border-[#E8EEF7] bg-white transition-all duration-300 z-50",
-        collapsed ? "w-[80px]" : "w-[280px]"
-      )}
-    >
-      {/* Logo */}
-      <div className="flex h-20 items-center gap-2.5 px-6">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="12" cy="12" r="10" stroke="#1565D8" strokeWidth="1.5" />
-          <circle cx="12" cy="12" r="4" fill="#1565D8" />
-          <path d="M2 12H22" stroke="#1565D8" strokeWidth="1.5" strokeLinecap="round" />
-          <path d="M12 2C15 5 16.5 8.5 16.5 12C16.5 15.5 15 19 12 22" stroke="#1565D8" strokeWidth="1.5" strokeLinecap="round" />
-          <path d="M12 2C9 5 7.5 8.5 7.5 12C7.5 15.5 9 19 12 22" stroke="#1565D8" strokeWidth="1.5" strokeLinecap="round" />
-        </svg>
-        {!collapsed && (
-          <div>
-            <span className="text-xl font-bold text-[#172B4D]">EduGlobal</span>
-            <p className="text-[10px] font-medium text-[#94A3B8] tracking-wide uppercase">
-              {isAdmin ? "Admin Panel" : "Student Portal"}
-            </p>
-          </div>
-        )}
+  return <aside className={cn(
+    "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-[#E7EDF6] bg-white shadow-xl shadow-slate-900/5 transition-[width,transform] duration-300 lg:translate-x-0 lg:shadow-none",
+    collapsed ? "lg:w-20" : "lg:w-[280px]",
+    "w-[280px]",
+    mobileOpen ? "translate-x-0" : "-translate-x-full",
+  )}>
+    <div className={cn("flex h-18 shrink-0 items-center border-b border-[#EEF2F7] px-5", collapsed && "lg:justify-center lg:px-3")}>
+      <Link href="/dashboard" onClick={onClose} className="flex min-w-0 items-center gap-3">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-[#2563EB] to-[#7C3AED] text-white shadow-lg shadow-blue-500/20"><Building2 className="h-5 w-5"/></span>
+        <span className={cn("min-w-0", collapsed && "lg:hidden")}><span className="block truncate text-lg font-extrabold tracking-tight text-[#0F172A]">EduGlobal</span><span className="block truncate text-[10px] font-bold uppercase tracking-[0.16em] text-[#94A3B8]">{portalName}</span></span>
+      </Link>
+      <button onClick={onClose} aria-label="Close navigation" className="ml-auto rounded-xl p-2 text-[#64748B] hover:bg-[#F1F5F9] lg:hidden"><X className="h-5 w-5"/></button>
+    </div>
+
+    <div className="admin-scrollbar flex-1 overflow-y-auto overflow-x-hidden px-3 py-4">
+      {groups.map((group, index) => <div key={group.label || index} className={cn(index > 0 && "mt-5 border-t border-[#EEF2F7] pt-5")}>
+        {group.label && <p className={cn("mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#94A3B8]", collapsed && "lg:sr-only")}>{group.label}</p>}
+        <nav className="space-y-1">{group.items.map((item) => {
+          const active = item.href === "/dashboard" ? pathname === item.href : pathname.startsWith(item.href);
+          const Icon = item.icon;
+          return <Link key={item.href} href={item.href} onClick={onClose} title={collapsed ? item.label : undefined} className={cn(
+            "group relative flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold transition-all",
+            active ? "bg-[#EEF5FF] text-[#1D4ED8]" : "text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#0F172A]",
+            collapsed && "lg:justify-center lg:px-2",
+          )}>
+            {active && <span className="absolute -left-3 h-6 w-1 rounded-r-full bg-[#2563EB]"/>}
+            <Icon className={cn("h-[19px] w-[19px] shrink-0 transition-transform group-hover:scale-105", active && "text-[#2563EB]")}/>
+            <span className={cn("truncate", collapsed && "lg:hidden")}>{item.label}</span>
+          </Link>;
+        })}</nav>
+      </div>)}
+    </div>
+
+    <div className="shrink-0 border-t border-[#EEF2F7] p-3">
+      <div className={cn("mb-2 flex items-center gap-3 rounded-xl bg-[#F8FAFC] p-2.5", collapsed && "lg:justify-center")}>
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#0F172A] text-xs font-bold text-white">{user?.fullName?.split(" ").map((part) => part[0]).join("").slice(0,2).toUpperCase() || "U"}</span>
+        <span className={cn("min-w-0 flex-1", collapsed && "lg:hidden")}><span className="block truncate text-xs font-bold text-[#0F172A]">{user?.fullName}</span><span className="block truncate text-[11px] capitalize text-[#64748B]">{user?.role}</span></span>
       </div>
-
-      {/* ─── ADMIN SIDEBAR ─── */}
-      {isAdmin ? (
-        <>
-          <div className="mt-2 px-3 space-y-1">
-            <NavSection items={adminMainNav} collapsed={collapsed} pathname={pathname} />
-          </div>
-
-          {!collapsed && <div className="mx-6 my-4 border-t border-[#E8EEF7]" />}
-
-          {!collapsed && (
-            <NavSection
-              title="Workflow"
-              items={adminWorkflowNav}
-              collapsed={collapsed}
-              pathname={pathname}
-            />
-          )}
-          {collapsed && (
-            <NavSection items={adminWorkflowNav} collapsed={collapsed} pathname={pathname} />
-          )}
-
-          {!collapsed && <div className="mx-6 my-4 border-t border-[#E8EEF7]" />}
-
-          <NavSection items={adminBottomNav} collapsed={collapsed} pathname={pathname} />
-        </>
-      ) : isCounsellor ? (
-        /* ─── COUNSELLOR SIDEBAR ─── */
-        <>
-          <div className="mt-2 px-3 space-y-1">
-            <NavSection items={[
-              { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-              { href: "/students", label: "Students", icon: Users },
-              { href: "/applications", label: "Applications", icon: FileText },
-              { href: "/appointments", label: "Appointments", icon: Calendar },
-              { href: "/messages", label: "Messages", icon: MessageSquare },
-            ]} collapsed={collapsed} pathname={pathname} />
-          </div>
-
-          {!collapsed && <div className="mx-6 my-4 border-t border-[#E8EEF7]" />}
-
-          <NavSection items={[
-            { href: "/profile", label: "My Profile", icon: User },
-            { href: "/settings", label: "Settings", icon: Settings },
-          ]} collapsed={collapsed} pathname={pathname} />
-        </>
-      ) : (
-        /* ─── STUDENT SIDEBAR ─── */
-        <>
-          <div className="mt-2 px-3 space-y-1">
-            <NavSection items={studentMainNav} collapsed={collapsed} pathname={pathname} />
-          </div>
-
-          {!collapsed && <div className="mx-6 my-4 border-t border-[#E8EEF7]" />}
-
-          {!collapsed && (
-            <NavSection
-              title="Services"
-              items={studentServiceNav}
-              collapsed={collapsed}
-              pathname={pathname}
-            />
-          )}
-          {collapsed && (
-            <NavSection items={studentServiceNav} collapsed={collapsed} pathname={pathname} />
-          )}
-
-          {!collapsed && <div className="mx-6 my-4 border-t border-[#E8EEF7]" />}
-
-          <NavSection items={studentBottomNav} collapsed={collapsed} pathname={pathname} />
-        </>
-      )}
-
-      {/* Collapse Toggle */}
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="absolute bottom-20 right-3 rounded-lg border border-[#E5E7EB] bg-white p-2 text-[#64748B] transition-all hover:bg-[#F8FAFC] hover:text-[#0F172A]"
-      >
-        {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-      </button>
-
-      {/* Logout */}
-      <div className="absolute bottom-6 left-0 right-0 px-3">
-        <button
-          onClick={async () => {
-            await logout();
-            window.location.href = "/login";
-          }}
-          className={cn(
-            "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[#6B7280] transition-all hover:bg-red-50 hover:text-red-600",
-            collapsed && "justify-center"
-          )}
-        >
-          <LogOut className="h-5 w-5 shrink-0" />
-          {!collapsed && <span>Logout</span>}
-        </button>
+      <div className="flex items-center gap-1">
+        <button onClick={async () => { await logout(); window.location.href = "/login"; }} className={cn("flex h-10 flex-1 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-[#64748B] hover:bg-red-50 hover:text-red-600", collapsed && "lg:justify-center lg:px-2")}><LogOut className="h-[18px] w-[18px]"/><span className={cn(collapsed && "lg:hidden")}>Sign out</span></button>
+        <button onClick={onToggle} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} className="hidden h-10 w-10 shrink-0 place-items-center rounded-xl text-[#64748B] hover:bg-[#F1F5F9] lg:grid">{collapsed ? <ChevronRight className="h-4 w-4"/> : <ChevronLeft className="h-4 w-4"/>}</button>
       </div>
-    </aside>
-  );
+    </div>
+  </aside>;
 }

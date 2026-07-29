@@ -21,6 +21,11 @@ export interface University {
   updatedAt: string;
 }
 
+export interface UniversityRecommendation extends University {
+  score: number;
+  reasons: string[];
+}
+
 export interface UniversityListResponse {
   success: boolean;
   message: string;
@@ -60,4 +65,8 @@ export async function getUniversityById(id: string): Promise<{ success: boolean;
 
 export async function getUniversitiesByCountry(country: string): Promise<{ success: boolean; data: University[] }> {
   return apiClient<{ success: boolean; data: University[] }>("GET", `/api/v1/universities/country/${country}`);
+}
+
+export async function getUniversityRecommendations(limit = 9): Promise<{ success: boolean; message: string; data: UniversityRecommendation[] }> {
+  return apiClient("GET", "/api/v1/universities/recommendations", { params: { limit: String(limit) } });
 }

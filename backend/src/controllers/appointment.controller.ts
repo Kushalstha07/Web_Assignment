@@ -43,11 +43,13 @@ export class AppointmentController {
   async getMyAppointments(req: Request, res: Response) {
     try {
       const userId = req.user?.id;
+      const role = req.user?.role || "student";
       if (!userId) return ApiResponseHelper.error(res, "Unauthorized", 401);
 
-      const apps = await appointmentService.getMyAppointments(userId);
+      const apps = await appointmentService.getMyAppointments(userId, role);
       return ApiResponseHelper.success(res, apps, "Appointments fetched");
     } catch (error) {
+      if (error instanceof HttpException) return ApiResponseHelper.error(res, error.message, error.status);
       const message = error instanceof Error ? error.message : "Something went wrong";
       return ApiResponseHelper.error(res, message, 500);
     }

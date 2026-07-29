@@ -1,325 +1,127 @@
 "use client";
 
-import { useAuth } from "@/context/AuthContext";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
+import { FileText, Search, CheckCircle, Clock3, Send, XCircle } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { SkeletonTable } from "@/components/ui/Skeleton";
-import { Search, Filter, Plus, Eye, FileText, Calendar, User } from "lucide-react";
+import { getAllApplications, getAssignedApplications, getMyApplications, updateApplication, type Application } from "@/lib/api/application.api";
+import { getUsers } from "@/lib/api/admin.api";
+import type { AdminUser } from "@/lib/api/types";
+import { getUniversities, type University } from "@/lib/api/university.api";
+import { getCounsellors, type Counsellor } from "@/lib/api/counsellor.api";
 
-interface Application {
-  id: string;
-  studentName: string;
-  university: string;
-  program: string;
-  status: "pending" | "in_progress" | "approved" | "rejected" | "completed";
-  submittedDate: string;
-  deadline: string;
-  counsellor: string;
-  progress: number;
+const statuses = ["draft", "submitted", "under-review", "accepted", "rejected", "waitlisted", "withdrawn"];
+const stages = ["documents-pending", "documents-uploaded", "verified", "interview-scheduled", "interview-completed", "decision-pending", "decision-made"];
+const pretty = (value: string) => value.split("-").map((part) => part[0].toUpperCase() + part.slice(1)).join(" ");
+
+function statusVariant(status: string): "default" | "info" | "success" | "warning" | "danger" {
+  if (status === "accepted") return "success";
+  if (status === "rejected" || status === "withdrawn") return "danger";
+  if (status === "submitted" || status === "under-review" || status === "waitlisted") return "warning";
+  return "default";
 }
 
 export default function ApplicationsPage() {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [universities, setUniversities] = useState<University[]>([]);
+  const [counsellors, setCounsellors] = useState<Counsellor[]>([]);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState("");
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/login");
-    }
-  }, [user, loading, router]);
+  useEffect(() => { if (!authLoading && !user) router.push("/login"); }, [authLoading, user, router]);
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-[#0F172A]">Applications</h1>
-          <p className="mt-1 text-sm text-[#64748B]">Loading...</p>
-        </div>
-        <SkeletonTable rows={6} columns={6} />
-      </div>
-    );
+  const load = useCallback(async () => {
+    if (!user) return;
+    try {
+      setLoading(true);
+      const applicationRequest = user.role === "admin"
+        ? getAllApplications(1, 100)
+        : user.role === "counsellor"
+          ? getAssignedApplications()
+          : getMyApplications();
+      const [applicationResult, universityResult, userResult, counsellorResult] = await Promise.all([
+        applicationRequest,
+        getUniversities({ limit: 100 }),
+        user.role === "admin" ? getUsers(1, 100) : Promise.resolve(null),
+        user.role === "admin" ? getCounsellors() : Promise.resolve(null),
+      ]);
+      setApplications(applicationResult.data || []);
+      setUniversities(universityResult.data || []);
+      setUsers(userResult?.data || []);
+      setCounsellors(counsellorResult?.data || []);
+      setError("");
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to load applications"); }
+    finally { setLoading(false); }
+  }, [user]);
+
+  useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);
+
+  const userNames = useMemo(() => new Map(users.map((item) => [item.id, item.fullName])), [users]);
+  const universityNames = useMemo(() => new Map(universities.map((item) => [item.id, item.name])), [universities]);
+  const counsellorNames = useMemo(() => new Map(counsellors.map((item) => [item.id, item.fullName])), [counsellors]);
+  const filtered = useMemo(() => applications.filter((item) => {
+    const haystack = `${item.program} ${userNames.get(item.studentId) || item.studentId} ${universityNames.get(item.universityId) || item.universityId}`.toLowerCase();
+    return haystack.includes(search.toLowerCase()) && (!status || item.status === status);
+  }), [applications, search, status, userNames, universityNames]);
+
+  async function changeApplication(id: string, field: "status" | "stage", value: string) {
+    try {
+      setSavingId(id);
+      const response = await updateApplication(id, { [field]: value });
+      if (!response.success) throw new Error(response.message);
+      setApplications((current) => current.map((item) => item.id === id ? response.data : item));
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to update application"); }
+    finally { setSavingId(""); }
   }
 
-  if (!user) {
-    return null;
+  async function assignCounsellor(id: string, counsellorId: string) {
+    try {
+      setSavingId(id);
+      const response = await updateApplication(id, { counsellorId: counsellorId || null });
+      if (!response.success) throw new Error(response.message);
+      setApplications((current) => current.map((item) => item.id === id ? response.data : item));
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to assign counsellor"); }
+    finally { setSavingId(""); }
   }
 
-  const mockApplications: Application[] = [
-    {
-      id: "1",
-      studentName: "John Smith",
-      university: "University of Toronto",
-      program: "MBA",
-      status: "in_progress",
-      submittedDate: "2025-01-15",
-      deadline: "2025-03-01",
-      counsellor: "Sarah Williams",
-      progress: 65,
-    },
-    {
-      id: "2",
-      studentName: "Sarah Johnson",
-      university: "Stanford University",
-      program: "MS Computer Science",
-      status: "approved",
-      submittedDate: "2025-01-10",
-      deadline: "2025-02-15",
-      counsellor: "Michael Brown",
-      progress: 100,
-    },
-    {
-      id: "3",
-      studentName: "Michael Chen",
-      university: "University of Melbourne",
-      program: "MS Data Science",
-      status: "pending",
-      submittedDate: "2025-01-20",
-      deadline: "2025-04-01",
-      counsellor: "Sarah Williams",
-      progress: 30,
-    },
-    {
-      id: "4",
-      studentName: "Emily Davis",
-      university: "MIT",
-      program: "PhD AI",
-      status: "in_progress",
-      submittedDate: "2025-01-05",
-      deadline: "2025-02-28",
-      counsellor: "John Doe",
-      progress: 80,
-    },
-    {
-      id: "5",
-      studentName: "James Wilson",
-      university: "University of British Columbia",
-      program: "MBA",
-      status: "rejected",
-      submittedDate: "2024-12-20",
-      deadline: "2025-01-15",
-      counsellor: "Michael Brown",
-      progress: 100,
-    },
-    {
-      id: "6",
-      studentName: "Lisa Anderson",
-      university: "Harvard University",
-      program: "MBA",
-      status: "completed",
-      submittedDate: "2024-11-15",
-      deadline: "2025-01-01",
-      counsellor: "Sarah Williams",
-      progress: 100,
-    },
-  ];
+  if (authLoading || loading) return <div className="space-y-6"><SkeletonTable rows={7} columns={7}/></div>;
+  if (!user) return null;
 
-  const getStatusBadge = (status: Application["status"]) => {
-    switch (status) {
-      case "pending":
-        return <Badge variant="warning">Pending</Badge>;
-      case "in_progress":
-        return <Badge variant="info">In Progress</Badge>;
-      case "approved":
-        return <Badge variant="success">Approved</Badge>;
-      case "rejected":
-        return <Badge variant="danger">Rejected</Badge>;
-      case "completed":
-        return <Badge variant="success">Completed</Badge>;
-    }
+  const counts = {
+    total: applications.length,
+    submitted: applications.filter((item) => item.status === "submitted" || item.status === "under-review").length,
+    accepted: applications.filter((item) => item.status === "accepted").length,
+    rejected: applications.filter((item) => item.status === "rejected").length,
   };
 
-  const getStatusCounts = () => {
-    return {
-      total: mockApplications.length,
-      pending: mockApplications.filter(a => a.status === "pending").length,
-      inProgress: mockApplications.filter(a => a.status === "in_progress").length,
-      approved: mockApplications.filter(a => a.status === "approved" || a.status === "completed").length,
-    };
-  };
-
-  const counts = getStatusCounts();
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-[#0F172A]">Applications</h1>
-          <p className="mt-1 text-sm text-[#64748B]">Track and manage all student applications</p>
-        </div>
-        <Button>
-          <Plus className="h-4 w-4" />
-          New Application
-        </Button>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid gap-6 md:grid-cols-4">
-        <Card padding="md">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-[#64748B]">Total Applications</p>
-              <p className="mt-2 text-2xl font-bold text-[#0F172A]">{counts.total}</p>
-            </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#EEF5FF]">
-              <FileText className="h-6 w-6 text-[#2563EB]" />
-            </div>
-          </div>
-        </Card>
-        <Card padding="md">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-[#64748B]">Pending</p>
-              <p className="mt-2 text-2xl font-bold text-[#0F172A]">{counts.pending}</p>
-            </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#F59E0B]/10">
-              <Calendar className="h-6 w-6 text-[#F59E0B]" />
-            </div>
-          </div>
-        </Card>
-        <Card padding="md">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-[#64748B]">In Progress</p>
-              <p className="mt-2 text-2xl font-bold text-[#0F172A]">{counts.inProgress}</p>
-            </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-100">
-              <User className="h-6 w-6 text-[#7C3AED]" />
-            </div>
-          </div>
-        </Card>
-        <Card padding="md">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-[#64748B]">Approved</p>
-              <p className="mt-2 text-2xl font-bold text-[#0F172A]">{counts.approved}</p>
-            </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#22C55E]/10">
-              <Eye className="h-6 w-6 text-[#22C55E]" />
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <Card padding="md">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
-            <Input
-              placeholder="Search by student name or university..."
-              className="pl-10"
-            />
-          </div>
-          <div className="flex gap-3">
-            <select className="h-11 rounded-[12px] border border-[#E5E7EB] bg-white px-4 pr-10 text-sm text-[#0F172A] outline-none transition-all hover:border-[#CBD5E1] focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/15">
-              <option>All Status</option>
-              <option>Pending</option>
-              <option>In Progress</option>
-              <option>Approved</option>
-              <option>Rejected</option>
-            </select>
-            <Button variant="secondary">
-              <Filter className="h-4 w-4" />
-              Filters
-            </Button>
-          </div>
-        </div>
-      </Card>
-
-      {/* Applications Table */}
-      <div className="rounded-[20px] border border-[#E5E7EB] bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[#E5E7EB] bg-[#F8FAFC]">
-                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#64748B]">Student</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#64748B]">University</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#64748B]">Program</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#64748B]">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#64748B]">Progress</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#64748B]">Deadline</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#64748B]">Counsellor</th>
-                <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#64748B]">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#E5E7EB]">
-              {mockApplications.map((app) => (
-                <tr key={app.id} className="transition-all hover:bg-[#F8FAFC]">
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#2563EB] to-[#7C3AED] text-sm font-bold text-white">
-                        {app.studentName.split(" ").map(n => n[0]).join("")}
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-[#0F172A]">{app.studentName}</p>
-                        <p className="text-xs text-[#64748B]">ID: {app.id}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <p className="text-sm text-[#0F172A]">{app.university}</p>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <p className="text-sm text-[#64748B]">{app.program}</p>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    {getStatusBadge(app.status)}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-24 rounded-full bg-[#E2E8F0]">
-                        <div
-                          className="h-2 rounded-full bg-gradient-to-r from-[#2563EB] to-[#7C3AED]"
-                          style={{ width: `${app.progress}%` }}
-                        />
-                      </div>
-                      <span className="text-xs font-semibold text-[#64748B]">{app.progress}%</span>
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <p className="text-sm text-[#64748B]">{app.deadline}</p>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <p className="text-sm text-[#64748B]">{app.counsellor}</p>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button className="rounded-lg p-2 text-[#64748B] transition-all hover:bg-[#EEF5FF] hover:text-[#1565D8]" title="View">
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button className="rounded-lg p-2 text-[#64748B] transition-all hover:bg-[#EEF5FF] hover:text-[#1565D8]" title="Edit">
-                        <FileText className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        <div className="border-t border-[#E5E7EB] px-6 py-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-[#64748B]">
-              Showing {mockApplications.length} of {mockApplications.length} applications
-            </p>
-            <div className="flex gap-2">
-              <Button variant="secondary" size="sm" disabled>
-                Previous
-              </Button>
-              <Button variant="secondary" size="sm">
-                Next
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+  return <div className="space-y-6">
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">Applications</h1><p className="mt-1 text-sm text-[#64748B]">Live application records from the application service.</p></div>{user.role === "student" && <Button onClick={() => router.push("/universities")}>Start application</Button>}</div>
+    {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <Metric label="Total" value={counts.total} icon={FileText} color="text-[#2563EB]" bg="bg-[#EEF5FF]"/>
+      <Metric label="In review" value={counts.submitted} icon={Clock3} color="text-[#F59E0B]" bg="bg-[#FFF9EE]"/>
+      <Metric label="Accepted" value={counts.accepted} icon={CheckCircle} color="text-[#22C55E]" bg="bg-[#F0FDF4]"/>
+      <Metric label="Rejected" value={counts.rejected} icon={XCircle} color="text-[#EF4444]" bg="bg-red-50"/>
     </div>
-  );
+    <Card><div className="flex flex-col gap-3 sm:flex-row"><div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]"/><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search student, university, or program" className="pl-10"/></div><select value={status} onChange={(event) => setStatus(event.target.value)} className="h-11 rounded-xl border border-[#DDE5EF] bg-white px-4 text-sm"><option value="">All statuses</option>{statuses.map((item) => <option key={item} value={item}>{pretty(item)}</option>)}</select></div></Card>
+    <div className="overflow-x-auto rounded-[20px] border border-[#E7EDF6] bg-white shadow-sm"><table className="min-w-[1180px] w-full"><thead><tr className="border-b bg-[#F8FAFC]">{["Student", "University", "Program", "Counsellor", "Status", "Stage", "Updated", "Actions"].map((heading) => <th key={heading} className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider text-[#64748B]">{heading}</th>)}</tr></thead><tbody className="divide-y divide-[#E7EDF6]">
+      {filtered.map((item) => <tr key={item.id} className="hover:bg-[#F8FAFC]"><td className="px-5 py-4"><p className="text-sm font-semibold text-[#0F172A]">{item.studentName || userNames.get(item.studentId) || (item.studentId === user.id ? user.fullName : "Unknown user")}</p><p className="text-xs text-[#94A3B8]">{item.studentId.slice(-8)}</p></td><td className="px-5 py-4 text-sm text-[#0F172A]">{universityNames.get(item.universityId) || "Unknown university"}</td><td className="px-5 py-4 text-sm text-[#64748B]">{item.program}</td><td className="px-5 py-4">{user.role === "admin" ? <select disabled={savingId === item.id} value={item.counsellorId || ""} onChange={(event) => void assignCounsellor(item.id, event.target.value)} className="h-9 max-w-44 rounded-lg border px-2 text-xs"><option value="">Unassigned</option>{counsellors.map((counsellor) => <option key={counsellor.id} value={counsellor.id}>{counsellor.fullName}</option>)}</select> : <span className="text-sm text-[#64748B]">{item.counsellorId ? counsellorNames.get(item.counsellorId) || "Assigned to you" : "Unassigned"}</span>}</td><td className="px-5 py-4">{user.role === "admin" || user.role === "counsellor" ? <select disabled={savingId === item.id} value={item.status} onChange={(event) => void changeApplication(item.id, "status", event.target.value)} className="h-9 rounded-lg border px-2 text-xs">{statuses.map((value) => <option key={value} value={value}>{pretty(value)}</option>)}</select> : <Badge variant={statusVariant(item.status)}>{pretty(item.status)}</Badge>}</td><td className="px-5 py-4">{user.role === "admin" || user.role === "counsellor" ? <select disabled={savingId === item.id} value={item.stage} onChange={(event) => void changeApplication(item.id, "stage", event.target.value)} className="h-9 rounded-lg border px-2 text-xs">{stages.map((value) => <option key={value} value={value}>{pretty(value)}</option>)}</select> : <span className="text-sm text-[#64748B]">{pretty(item.stage)}</span>}</td><td className="px-5 py-4 text-sm text-[#64748B]">{new Date(item.updatedAt).toLocaleDateString()}</td><td className="px-5 py-4"><Button variant="ghost" size="sm" onClick={() => router.push(`/applications?selected=${item.id}`)}><Send className="h-4 w-4"/>Details</Button></td></tr>)}
+      {filtered.length === 0 && <tr><td colSpan={8} className="px-6 py-16 text-center text-sm text-[#64748B]">No application records match this view.</td></tr>}
+    </tbody></table></div>
+  </div>;
+}
+
+function Metric({ label, value, icon: Icon, color, bg }: { label: string; value: number; icon: React.ElementType; color: string; bg: string }) {
+  return <Card><div className="flex items-center justify-between"><div><p className="text-sm text-[#64748B]">{label}</p><p className="mt-2 text-2xl font-bold">{value}</p></div><div className={`rounded-xl p-3 ${bg}`}><Icon className={`h-5 w-5 ${color}`}/></div></div></Card>;
 }

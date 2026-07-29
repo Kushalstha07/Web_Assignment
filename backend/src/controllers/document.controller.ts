@@ -3,6 +3,7 @@ import { ApiResponseHelper } from "../uttils/apihelper.util";
 import { documentService } from "../services/document.service";
 import { CreateDocumentDTO, VerifyDocumentDTO } from "../dtos/document.dto";
 import { HttpException } from "../exceptions/http-exception";
+import { unlink } from "fs/promises";
 
 export class DocumentController {
   async upload(req: Request, res: Response) {
@@ -13,6 +14,7 @@ export class DocumentController {
 
       const parsed = CreateDocumentDTO.safeParse(req.body);
       if (!parsed.success) {
+        await unlink(req.file.path).catch(() => undefined);
         const errors = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join(", ");
         return ApiResponseHelper.error(res, `Validation error: ${errors}`, 400);
       }
@@ -20,7 +22,34 @@ export class DocumentController {
       const doc = await documentService.upload(parsed.data, userId, req.file);
       return ApiResponseHelper.success(res, doc, "Document uploaded", 201);
     } catch (error) {
+      if (req.file) await unlink(req.file.path).catch(() => undefined);
       if (error instanceof HttpException) return ApiResponseHelper.error(res, error.message, error.status);
+      const message = error instanceof Error ? error.message : "Something went wrong";
+      return ApiResponseHelper.error(res, message, 500);
+    }
+  }
+
+  async download(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+      const role = req.user?.role || "student";
+      if (!userId) return ApiResponseHelper.error(res, "Unauthorized", 401);
+
+      const file = await documentService.getDownload(
+        req.params.id as string,
+        userId,
+        role,
+      );
+      res.setHeader("Content-Type", file.mimeType);
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename*=UTF-8''${encodeURIComponent(file.originalName)}`,
+      );
+      return res.sendFile(file.path);
+    } catch (error) {
+      if (error instanceof HttpException) {
+        return ApiResponseHelper.error(res, error.message, error.status);
+      }
       const message = error instanceof Error ? error.message : "Something went wrong";
       return ApiResponseHelper.error(res, message, 500);
     }

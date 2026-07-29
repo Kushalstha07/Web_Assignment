@@ -1,19 +1,20 @@
 import request from "supertest";
-import mongoose from "mongoose";
 import path from "path";
 import fs from "fs";
+import jwt from "jsonwebtoken";
 import app from "../app";
-import { DocumentModel } from "../models/document.model";
-import { UserModel } from "../models/user.model";
+import { SECRET_KEY } from "../configs/constant";
+import { DOCUMENT_UPLOAD_DIRECTORY } from "../configs/storage";
+import { NotificationModel } from "../models/notification.model";
 
 let studentToken: string;
 let adminToken: string;
+let otherStudentToken: string;
 let documentId: string;
+let documentFileName: string;
+let studentId: string;
 
 beforeAll(async () => {
-  const testUri = process.env.MONGODB_URI || "mongodb://localhost:27017/edu-global-test";
-  await mongoose.connect(testUri);
-
   // Register student
   await request(app).post("/api/v1/auth/register").send({
     fullName: "Doc Student",
@@ -33,33 +34,16 @@ beforeAll(async () => {
     password: "password123",
   });
   studentToken = studentRes.body.data.token;
+  studentId = (jwt.decode(studentToken) as { id: string }).id;
 
-  // Register admin
-  await request(app).post("/api/v1/auth/register").send({
-    fullName: "Doc Admin",
-    username: "docadmin",
-    email: "docadmin@test.com",
-    phoneNumber: "1234567890",
-    studyLevel: "postgraduate",
-    destination: "usa",
-    fieldOfStudy: "Admin",
-    intake: "fall",
-    budget: "20k-35k",
-    password: "password123",
-    role: "admin",
-  });
-
-  const adminRes = await request(app).post("/api/v1/auth/login").send({
-    email: "docadmin@test.com",
-    password: "password123",
-  });
-  adminToken = adminRes.body.data.token;
-});
-
-afterAll(async () => {
-  await DocumentModel.deleteMany({});
-  await UserModel.deleteMany({ email: { $in: ["docstudent@test.com", "docadmin@test.com"] } });
-  await mongoose.disconnect();
+  adminToken = jwt.sign(
+    { id: "document-admin", email: "docadmin@test.com", role: "admin" },
+    SECRET_KEY,
+  );
+  otherStudentToken = jwt.sign(
+    { id: "other-document-student", email: "other-doc@test.com", role: "student" },
+    SECRET_KEY,
+  );
 });
 
 describe("Document API", () => {
@@ -87,6 +71,9 @@ describe("Document API", () => {
     expect(res.body.data.category).toBe("transcript");
     expect(res.body.data.status).toBe("pending");
     documentId = res.body.data.id;
+    documentFileName = res.body.data.fileName;
+    expect(res.body.data.url).toBe(`/api/v1/documents/${documentId}/download`);
+    expect(fs.existsSync(path.join(DOCUMENT_UPLOAD_DIRECTORY, documentFileName))).toBe(true);
   });
 
   // Validation error
@@ -119,6 +106,47 @@ describe("Document API", () => {
     expect(Array.isArray(res.body.data)).toBe(true);
   });
 
+  it("should not allow a student to verify a document", async () => {
+    const res = await request(app)
+      .patch(`/api/v1/documents/${documentId}/verify`)
+      .set("Authorization", `Bearer ${studentToken}`)
+      .send({ status: "verified" });
+
+    expect(res.status).toBe(403);
+  });
+
+  it("should download a document for its owner", async () => {
+    const res = await request(app)
+      .get(`/api/v1/documents/${documentId}/download`)
+      .set("Authorization", `Bearer ${studentToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.headers["content-disposition"]).toContain("attachment");
+    expect(res.text).toBe("Test document content");
+  });
+
+  it("should reject unauthenticated document downloads", async () => {
+    const res = await request(app).get(`/api/v1/documents/${documentId}/download`);
+    expect(res.status).toBe(401);
+  });
+
+  it("should reject document downloads by another student", async () => {
+    const res = await request(app)
+      .get(`/api/v1/documents/${documentId}/download`)
+      .set("Authorization", `Bearer ${otherStudentToken}`);
+
+    expect(res.status).toBe(403);
+  });
+
+  it("should allow an admin to download a document", async () => {
+    const res = await request(app)
+      .get(`/api/v1/documents/${documentId}/download`)
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.text).toBe("Test document content");
+  });
+
   // Verify document
   it("should verify a document as admin", async () => {
     const res = await request(app)
@@ -128,6 +156,7 @@ describe("Document API", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe("verified");
+    expect(await NotificationModel.exists({ userId: studentId, title: "Document verified" })).toBeTruthy();
   });
 
   // Delete document
@@ -138,5 +167,6 @@ describe("Document API", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
+    expect(fs.existsSync(path.join(DOCUMENT_UPLOAD_DIRECTORY, documentFileName))).toBe(false);
   });
 });

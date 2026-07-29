@@ -2,11 +2,13 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { SECRET_KEY } from "../configs/constant";
 import { ApiResponseHelper } from "../uttils/apihelper.util";
+import { UserModel } from "../models/user.model";
 
 export interface JwtPayload {
   id: string;
   email: string;
   role: string;
+  sessionVersion?: number;
 }
 
 declare global {
@@ -17,7 +19,7 @@ declare global {
   }
 }
 
-export const authenticate = (req: Request, res: Response, next: NextFunction) => {
+export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
   try {
     let token = req.headers.authorization?.split(" ")[1];
 
@@ -36,7 +38,14 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
       return ApiResponseHelper.error(res, "Authentication required. No token provided.", 401);
     }
 
-    req.user = jwt.verify(token, SECRET_KEY) as JwtPayload;
+    const payload = jwt.verify(token, SECRET_KEY) as JwtPayload;
+    if (payload.sessionVersion !== undefined) {
+      const user = await UserModel.findById(payload.id).select("+sessionVersion").lean();
+      if (!user || (user.sessionVersion || 0) !== payload.sessionVersion) {
+        return ApiResponseHelper.error(res, "Invalid or expired token.", 401);
+      }
+    }
+    req.user = payload;
     next();
   } catch {
     return ApiResponseHelper.error(res, "Invalid or expired token.", 401);

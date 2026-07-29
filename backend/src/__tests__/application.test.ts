@@ -1,18 +1,18 @@
 import request from "supertest";
-import mongoose from "mongoose";
+import jwt from "jsonwebtoken";
 import app from "../app";
-import { ApplicationModel } from "../models/application.model";
-import { UserModel } from "../models/user.model";
+import { SECRET_KEY } from "../configs/constant";
+import { CounsellorModel } from "../models/counsellor.model";
+import { NotificationModel } from "../models/notification.model";
 
 let studentToken: string;
 let adminToken: string;
+let counsellorToken: string;
+let counsellorId: string;
 let applicationId: string;
+let studentId: string;
 
 beforeAll(async () => {
-  // Connect to test DB
-  const testUri = process.env.MONGODB_URI || "mongodb://localhost:27017/edu-global-test";
-  await mongoose.connect(testUri);
-
   // Register a student
   await request(app).post("/api/v1/auth/register").send({
     fullName: "Test Student",
@@ -33,33 +33,28 @@ beforeAll(async () => {
     password: "password123",
   });
   studentToken = studentRes.body.data.token;
+  studentId = (jwt.decode(studentToken) as { id: string }).id;
 
-  // Register + login admin
-  await request(app).post("/api/v1/auth/register").send({
-    fullName: "Test Admin",
-    username: "testadmin",
-    email: "admin@test.com",
-    phoneNumber: "1234567890",
-    studyLevel: "postgraduate",
-    destination: "usa",
-    fieldOfStudy: "Admin",
-    intake: "fall",
-    budget: "20k-35k",
-    password: "password123",
-    role: "admin",
+  adminToken = jwt.sign(
+    { id: "application-admin", email: "admin@test.com", role: "admin" },
+    SECRET_KEY,
+  );
+  const counsellor = await CounsellorModel.create({
+    userId: "application-counsellor-user",
+    fullName: "Application Counsellor",
+    email: "application-counsellor@test.com",
+    phoneNumber: "9800000011",
+    specialties: ["university-admissions"],
   });
-
-  const adminRes = await request(app).post("/api/v1/auth/login").send({
-    email: "admin@test.com",
-    password: "password123",
-  });
-  adminToken = adminRes.body.data.token;
-});
-
-afterAll(async () => {
-  await ApplicationModel.deleteMany({});
-  await UserModel.deleteMany({ email: { $in: ["student@test.com", "admin@test.com"] } });
-  await mongoose.disconnect();
+  counsellorId = counsellor._id.toString();
+  counsellorToken = jwt.sign(
+    {
+      id: "application-counsellor-user",
+      email: "application-counsellor@test.com",
+      role: "counsellor",
+    },
+    SECRET_KEY,
+  );
 });
 
 describe("Application API", () => {
@@ -115,6 +110,51 @@ describe("Application API", () => {
     expect(Array.isArray(res.body.data)).toBe(true);
   });
 
+  it("should let an admin assign a counsellor", async () => {
+    const res = await request(app)
+      .patch(`/api/v1/applications/${applicationId}`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ counsellorId });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.counsellorId).toBe(counsellorId);
+    expect(await NotificationModel.exists({ userId: "application-counsellor-user", category: "application" })).toBeTruthy();
+    expect(await NotificationModel.exists({ userId: studentId, title: "Counsellor assigned" })).toBeTruthy();
+  });
+
+  it("should return only assigned applications to a counsellor", async () => {
+    const res = await request(app)
+      .get("/api/v1/applications/assigned")
+      .set("Authorization", `Bearer ${counsellorToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].id).toBe(applicationId);
+    expect(res.body.data[0].studentName).toBe("Test Student");
+  });
+
+  it("should return only assigned student records to a counsellor", async () => {
+    const res = await request(app)
+      .get("/api/v1/counsellors/me/students")
+      .set("Authorization", `Bearer ${counsellorToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].fullName).toBe("Test Student");
+    expect(res.body.data[0].password).toBeUndefined();
+  });
+
+  it("should let an assigned counsellor update workflow stage", async () => {
+    const res = await request(app)
+      .patch(`/api/v1/applications/${applicationId}`)
+      .set("Authorization", `Bearer ${counsellorToken}`)
+      .send({ stage: "verified" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.stage).toBe("verified");
+    expect(await NotificationModel.exists({ userId: studentId, title: "Application updated" })).toBeTruthy();
+  });
+
   // Submit application
   it("should submit a draft application", async () => {
     const res = await request(app)
@@ -124,6 +164,16 @@ describe("Application API", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe("submitted");
+    expect(await NotificationModel.exists({ userId: studentId, title: "Application submitted" })).toBeTruthy();
+  });
+
+  it("should reject student workflow status changes", async () => {
+    const res = await request(app)
+      .patch(`/api/v1/applications/${applicationId}`)
+      .set("Authorization", `Bearer ${studentToken}`)
+      .send({ status: "accepted", stage: "decision-made" });
+
+    expect(res.status).toBe(400);
   });
 
   // Update application

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { useEffect, useState } from "react";
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useDroppable, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, horizontalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
 import { cn } from "@/lib/utils";
@@ -100,18 +100,19 @@ interface PipelineColumnProps {
 
 function PipelineColumn({ stage, students }: PipelineColumnProps) {
   const [isOver, setIsOver] = useState(false);
+  const { setNodeRef } = useDroppable({ id: stage });
 
   return (
-    <div
+    <div ref={setNodeRef}
       className={cn(
-        "flex min-w-[280px] flex-col rounded-[20px] border-2 border-dashed bg-[#F8FAFC] p-4 transition-all",
+        "flex min-w-[260px] flex-col rounded-[18px] border border-[#E5E7EB] bg-[#F8FAFC] p-3.5 transition-all sm:min-w-[280px] sm:p-4",
         isOver ? "border-[#2563EB] bg-[#EEF5FF]" : "border-[#E5E7EB]"
       )}
       onDragOver={() => setIsOver(true)}
       onDragLeave={() => setIsOver(false)}
     >
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-sm font-bold text-[#0F172A]">{stage}</h3>
+        <h3 className="text-sm font-bold text-[#0F172A]">{stage.split("-").map((part) => part[0].toUpperCase() + part.slice(1)).join(" ")}</h3>
         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#2563EB] text-xs font-bold text-white">
           {students.length}
         </span>
@@ -128,7 +129,7 @@ function PipelineColumn({ stage, students }: PipelineColumnProps) {
   );
 }
 
-export function StudentPipeline({ students }: { students: Student[] }) {
+export function StudentPipeline({ students, onStageChange }: { students: Student[]; onStageChange?: (applicationId: string, stage: string) => Promise<void> }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [pipelineData, setPipelineData] = useState<Record<string, Student[]>>(() => {
     const data: Record<string, Student[]> = {};
@@ -145,6 +146,13 @@ export function StudentPipeline({ students }: { students: Student[] }) {
       },
     })
   );
+
+  useEffect(() => {
+    const next: Record<string, Student[]> = {};
+    PIPELINE_STAGES.forEach((stage) => { next[stage] = students.filter((student) => student.stage === stage); });
+    const timer = window.setTimeout(() => setPipelineData(next), 0);
+    return () => window.clearTimeout(timer);
+  }, [students]);
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -175,32 +183,26 @@ export function StudentPipeline({ students }: { students: Student[] }) {
       }
 
       // Add to new stage
-      if (student && PIPELINE_STAGES.includes(newStage as any)) {
+      if (student && (PIPELINE_STAGES as readonly string[]).includes(newStage)) {
         student = { ...student, stage: newStage };
         newData[newStage] = [...(newData[newStage] || []), student];
       }
 
       return newData;
     });
+    if ((PIPELINE_STAGES as readonly string[]).includes(newStage)) void onStageChange?.(studentId, newStage);
   };
 
   const activeStudent = activeId ? students.find(s => s.id === activeId) : null;
 
   return (
-    <div className="rounded-[20px] border border-[#E5E7EB] bg-white p-6 shadow-sm">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="rounded-[20px] border border-[#E5E7EB] bg-white p-4 shadow-sm sm:p-6">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-xl font-bold text-[#0F172A]">Student Pipeline</h2>
           <p className="mt-1 text-sm text-[#64748B]">Drag and drop students between stages</p>
         </div>
-        <div className="flex gap-2">
-          <button className="rounded-[12px] border border-[#E5E7EB] px-4 py-2 text-sm font-semibold text-[#64748B] hover:bg-[#F8FAFC]">
-            Filter
-          </button>
-          <button className="rounded-[12px] bg-[#2563EB] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1D4ED8]">
-            Add Student
-          </button>
-        </div>
+        <p className="text-xs font-medium text-[#94A3B8]">Stages are saved to the application API</p>
       </div>
 
       <DndContext
@@ -209,7 +211,7 @@ export function StudentPipeline({ students }: { students: Student[] }) {
         onDragEnd={handleDragEnd}
         modifiers={[restrictToHorizontalAxis]}
       >
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <div className="admin-scrollbar -mx-1 flex snap-x gap-4 overflow-x-auto px-1 pb-4">
           {PIPELINE_STAGES.map((stage) => (
             <PipelineColumn
               key={stage}

@@ -5,8 +5,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { cn } from "@/lib/utils";
-import { Search, Filter, MoreVertical, Eye, Edit, Trash2 } from "lucide-react";
+import { Search, Filter, Eye, Edit, Trash2 } from "lucide-react";
 
 export interface Student {
   id: string;
@@ -54,19 +53,19 @@ export function StudentsTable({ students, onView, onEdit, onDelete }: StudentsTa
     <div className="rounded-[20px] border border-[#E5E7EB] bg-white shadow-sm">
       {/* Header */}
       <div className="border-b border-[#E5E7EB] p-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-xl font-bold text-[#0F172A]">Recent Students</h2>
             <p className="mt-1 text-sm text-[#64748B]">Manage and track all student applications</p>
           </div>
-          <Button>
+          <Button className="w-full sm:w-auto">
             <Eye className="h-4 w-4" />
             Export
           </Button>
         </div>
 
         {/* Search and Filter */}
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
             <Input
@@ -76,7 +75,7 @@ export function StudentsTable({ students, onView, onEdit, onDelete }: StudentsTa
               className="pl-10"
             />
           </div>
-          <div className="relative">
+          <div className="relative sm:w-48">
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
@@ -94,7 +93,7 @@ export function StudentsTable({ students, onView, onEdit, onDelete }: StudentsTa
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full">
+          <table className="min-w-[1050px] w-full">
           <thead>
             <tr className="border-b border-[#E5E7EB] bg-[#F8FAFC]">
               <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#64748B]">Student</th>
@@ -186,7 +185,7 @@ export function StudentsTable({ students, onView, onEdit, onDelete }: StudentsTa
 
       {/* Pagination */}
       <div className="border-t border-[#E5E7EB] px-6 py-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-[#64748B]">
             Showing {filteredStudents.length} of {students.length} students
           </p>

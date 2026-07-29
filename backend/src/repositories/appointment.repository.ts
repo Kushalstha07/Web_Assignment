@@ -46,7 +46,7 @@ export class AppointmentMongoRepository implements IAppointmentRepository {
   }
 
   async update(id: string, data: UpdateAppointmentDTOType): Promise<IAppointment | null> {
-    const updated = await AppointmentModel.findByIdAndUpdate(id, { $set: data }, { new: true });
+    const updated = await AppointmentModel.findByIdAndUpdate(id, { $set: data }, { returnDocument: "after" });
     return updated ? (updated.toObject() as IAppointment) : null;
   }
 

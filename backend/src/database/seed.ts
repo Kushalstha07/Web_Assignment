@@ -3,6 +3,9 @@ import bcryptjs from "bcryptjs";
 import { MONGODB_URL } from "../configs/constant";
 import { UserModel } from "../models/user.model";
 import { University } from "../models/university.model";
+import { CounsellorModel } from "../models/counsellor.model";
+import { ScholarshipModel } from "../models/scholarship.model";
+import type { CounsellorSpecialty } from "../types/counsellor.type";
 
 async function seed() {
   try {
@@ -11,6 +14,8 @@ async function seed() {
 
     // ── Clear existing data ──
     await UserModel.deleteMany({});
+    await CounsellorModel.deleteMany({});
+    await ScholarshipModel.deleteMany({});
     console.log("Cleared existing users");
 
     // ── Seed Admin User ──
@@ -38,8 +43,14 @@ async function seed() {
       { fullName: "Emily Davis", username: "emily.davis", email: "emily.davis@eduglobal.com", phoneNumber: "9800000003" },
     ];
 
-    for (const c of counsellors) {
-      await UserModel.create({
+    const counsellorProfiles: Array<{ specialties: CounsellorSpecialty[]; yearsOfExperience: number; rating: number; reviewCount: number; hourlyRate: number; bio: string }> = [
+      { specialties: ["university-admissions", "scholarship-advising"], yearsOfExperience: 8, rating: 4.9, reviewCount: 126, hourlyRate: 45, bio: "University admissions specialist helping international students build strong applications." },
+      { specialties: ["visa-guidance", "career-counseling"], yearsOfExperience: 6, rating: 4.8, reviewCount: 94, hourlyRate: 40, bio: "Visa and career counsellor focused on practical planning and successful study transitions." },
+      { specialties: ["test-preparation", "general-advising"], yearsOfExperience: 5, rating: 4.7, reviewCount: 78, hourlyRate: 35, bio: "Test preparation mentor and general adviser for students at every stage of their journey." },
+    ];
+
+    for (const [index, c] of counsellors.entries()) {
+      const counsellorUser = await UserModel.create({
         ...c,
         studyLevel: "postgraduate" as const,
         destination: "usa" as const,
@@ -48,6 +59,14 @@ async function seed() {
         budget: "35k-plus" as const,
         password: counsellorPassword,
         role: "counsellor" as const,
+      });
+      await CounsellorModel.create({
+        userId: counsellorUser._id.toString(),
+        fullName: c.fullName,
+        email: c.email,
+        phoneNumber: c.phoneNumber,
+        ...counsellorProfiles[index],
+        available: true,
       });
       console.log(`Created counsellor: ${c.email} (password: counsellor123)`);
     }
@@ -76,7 +95,7 @@ async function seed() {
 
     console.log("\n✅ Seed completed successfully!");
     console.log(`   - 1 admin (admin@eduglobal.com / admin123)`);
-    console.log(`   - 3 counsellors (password: counsellor123)`);
+    console.log(`   - 3 counsellors with profiles (password: counsellor123)`);
     console.log(`   - 8 students (password: student123)`);
 
     // ── Seed Universities ──
@@ -100,6 +119,31 @@ async function seed() {
     ];
     await University.insertMany(universities);
     console.log(`Seeded ${universities.length} universities`);
+
+    // ── Seed Scholarships ──
+    const scholarships = [
+      { name: "Global Excellence Scholarship", provider: "Edu Global Foundation", type: "merit-based", amount: 25000, countries: ["usa", "canada"], universities: ["Harvard University", "University of Toronto"], eligibility: "Minimum GPA 3.7 with demonstrated leadership.", requirements: ["Academic transcripts", "Personal statement", "Two references"], deadline: "2026-12-15", status: "active", description: "A competitive award for high-achieving international students." },
+      { name: "International Student Support Grant", provider: "World Education Fund", type: "need-based", amount: 12000, countries: ["uk", "canada"], universities: [], eligibility: "International applicants who demonstrate financial need.", requirements: ["Financial statement", "Admission offer"], deadline: "2026-11-30", status: "active", description: "Need-based support that makes international study more accessible." },
+      { name: "Canada Future Leaders Award", provider: "Canadian Learning Council", type: "country-specific", amount: 18000, countries: ["canada"], universities: ["University of Toronto", "University of British Columbia", "University of Waterloo"], eligibility: "Leadership experience and admission to a Canadian university.", requirements: ["Leadership essay", "CV", "Admission offer"], deadline: "2027-01-20", status: "upcoming", description: "Supporting emerging leaders choosing Canada for higher education." },
+      { name: "Oxford International Opportunity", provider: "University of Oxford", type: "university-specific", amount: 30000, countries: ["uk"], universities: ["University of Oxford"], eligibility: "Offer holder with outstanding academic achievement.", requirements: ["Oxford offer letter", "Academic transcripts"], deadline: "2026-10-31", status: "active", description: "Tuition support for exceptional international Oxford applicants." },
+      { name: "Australia Awards Scholarship", provider: "Australian Government", type: "government", amount: 40000, countries: ["australia"], universities: ["University of Melbourne", "University of Sydney", "RMIT University"], eligibility: "Eligible developing-country citizens with a strong academic record.", requirements: ["Citizenship proof", "Study plan", "References"], deadline: "2027-02-28", status: "upcoming", description: "Government-funded study and development opportunity in Australia." },
+      { name: "Tech Innovators Fellowship", provider: "FutureTech Partners", type: "private", amount: 20000, countries: ["usa", "europe"], universities: ["Stanford University", "ETH Zurich"], eligibility: "Computer science or engineering applicants with an innovation portfolio.", requirements: ["Project portfolio", "Personal statement"], deadline: "2026-09-15", status: "active", description: "Private fellowship for students building meaningful technology." },
+      { name: "Women in STEM Scholarship", provider: "Global STEM Alliance", type: "merit-based", amount: 22000, countries: ["usa", "uk", "canada", "australia", "europe"], universities: [], eligibility: "Women applying to an accredited STEM program.", requirements: ["Academic transcripts", "STEM motivation essay"], deadline: "2026-12-01", status: "active", description: "Advancing women pursuing science, technology, engineering, and mathematics." },
+      { name: "European Research Mobility Grant", provider: "European Academic Network", type: "country-specific", amount: 15000, countries: ["europe"], universities: ["ETH Zurich", "University of Amsterdam"], eligibility: "Postgraduate research applicant at a participating European university.", requirements: ["Research proposal", "Supervisor reference"], deadline: "2026-08-30", status: "active", description: "Mobility funding for promising postgraduate researchers." },
+      { name: "Community Impact Award", provider: "International Service Trust", type: "private", amount: 10000, countries: ["usa", "uk", "canada"], universities: [], eligibility: "At least one year of documented community service.", requirements: ["Impact statement", "Community reference"], deadline: "2026-07-31", status: "active", description: "Recognising students who have created measurable community impact." },
+      { name: "Postgraduate Business Leaders Grant", provider: "Global Business Institute", type: "merit-based", amount: 28000, countries: ["uk", "australia"], universities: ["University of Cambridge", "University of Melbourne"], eligibility: "Postgraduate business applicant with professional leadership experience.", requirements: ["CV", "Leadership essay", "Academic transcripts"], deadline: "2027-01-10", status: "upcoming", description: "Funding for the next generation of responsible business leaders." },
+      { name: "First Generation University Grant", provider: "Access Education Fund", type: "need-based", amount: 14000, countries: ["usa", "canada", "uk"], universities: [], eligibility: "First-generation university applicant with demonstrated financial need.", requirements: ["Financial statement", "First-generation declaration"], deadline: "2026-11-15", status: "active", description: "Removing financial barriers for first-generation university students." },
+      { name: "Architecture and Design Excellence Award", provider: "Creative Futures Foundation", type: "university-specific", amount: 16000, countries: ["europe", "australia"], universities: ["ETH Zurich", "RMIT University"], eligibility: "Architecture or design applicant with a strong creative portfolio.", requirements: ["Portfolio", "Academic transcripts"], deadline: "2026-06-30", status: "expired", description: "Portfolio-based award for emerging architecture and design talent." },
+    ] as const;
+
+    await ScholarshipModel.insertMany(
+      scholarships.map((scholarship) => ({
+        ...scholarship,
+        currency: "USD",
+        applicationUrl: "https://example.com/scholarships/apply",
+      })),
+    );
+    console.log(`Seeded ${scholarships.length} scholarships`);
 
     process.exit(0);
   } catch (error) {

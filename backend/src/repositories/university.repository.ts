@@ -28,7 +28,7 @@ export class UniversityMongoRepository implements IUniversityRepository {
   }
 
   async update(id: string, data: Partial<UniversityType>): Promise<IUniversity | null> {
-    return University.findByIdAndUpdate(id, data, { new: true });
+    return University.findByIdAndUpdate(id, data, { returnDocument: "after" });
   }
 
   async delete(id: string): Promise<IUniversity | null> {

@@ -3,8 +3,11 @@ import { UniversityFilterDTOType } from "../dtos/university.dto";
 import { UniversityType } from "../types/university.type";
 import { HttpException } from "../exceptions/http-exception";
 import { IUniversity } from "../models/university.model";
+import { AcademicProfileMongoRepository } from "../repositories/academic-profile.repository";
+import { IAcademicProfile } from "../models/academic-profile.model";
 
 const universityRepo = new UniversityMongoRepository();
+const profileRepo = new AcademicProfileMongoRepository();
 
 export type SafeUniversity = {
   id: string;
@@ -26,6 +29,8 @@ export type SafeUniversity = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type RecommendedUniversity = SafeUniversity & { score: number; reasons: string[] };
 
 function toSafeUniversity(u: IUniversity): SafeUniversity {
   const doc = u as IUniversity & { createdAt?: Date; updatedAt?: Date };
@@ -89,36 +94,63 @@ export class UniversityService {
     };
   }
 
-  /**
-   * Compute a match score (0-100) between a student's academic profile and a university.
-   * Factors: budget match, courseType match, country preference, ranking prestige, GPA alignment.
-   */
-  computeMatchScore(university: IUniversity, profile?: { budgetRange?: string; preferredCountries?: string[]; gpa?: number }): number {
-    let score = 50; // baseline
+  private scoreUniversity(university: IUniversity, profile: IAcademicProfile): { score: number; reasons: string[] } {
+    let score = 10;
+    const reasons: string[] = [];
+    const normalizedField = profile.fieldOfStudy.toLowerCase();
+    const programMatch = (university.programs || []).some((program) => {
+      const normalizedProgram = program.toLowerCase();
+      return normalizedProgram.includes(normalizedField) || normalizedField.includes(normalizedProgram);
+    });
+    const suitableCourseTypes: Record<string, string[]> = {
+      "high-school": ["undergraduate", "diploma"],
+      diploma: ["undergraduate"],
+      bachelor: ["postgraduate"],
+      master: ["postgraduate", "research"],
+      doctorate: ["research"],
+    };
 
-    if (profile) {
-      // Budget match (up to 20 pts)
-      if (profile.budgetRange && university.budgetRange === profile.budgetRange) {
-        score += 20;
-      }
-
-      // Country preference match (up to 15 pts)
-      if (profile.preferredCountries?.length && profile.preferredCountries.includes(university.country)) {
-        score += 15;
-      }
-
-      // GPA alignment (up to 10 pts)
-      if (profile.gpa && profile.gpa >= 3.5) score += 10;
-      else if (profile.gpa && profile.gpa >= 3.0) score += 5;
-      else if (profile.gpa && profile.gpa >= 2.5) score += 2;
-
-      // Ranking prestige (up to 5 pts)
-      if (university.ranking === "top-10") score += 5;
-      else if (university.ranking === "top-50") score += 4;
-      else if (university.ranking === "top-100") score += 3;
+    if (profile.preferredCountries?.includes(university.country)) {
+      score += 25;
+      reasons.push("Preferred destination");
+    }
+    if (profile.tuitionBudget && profile.tuitionBudget === university.budgetRange) {
+      score += 20;
+      reasons.push("Within your tuition budget");
+    }
+    if (programMatch) {
+      score += 25;
+      reasons.push("Offers your study field");
+    }
+    if (suitableCourseTypes[profile.highestQualification]?.includes(university.courseType)) {
+      score += 10;
+      reasons.push("Suitable study level");
     }
 
-    return Math.min(100, Math.max(0, score));
+    const gpaThresholds: Record<string, number> = {
+      "top-10": 3.7,
+      "top-50": 3.4,
+      "top-100": 3,
+      "top-200": 2.5,
+      regional: 0,
+    };
+    if (profile.gpa === undefined || profile.gpa >= gpaThresholds[university.ranking]) {
+      score += profile.gpa === undefined ? 5 : 15;
+      reasons.push(profile.gpa === undefined ? "Academic requirements need review" : "Academic profile aligns");
+    }
+
+    if (!reasons.length) reasons.push("Explore as an alternative option");
+    return { score: Math.min(100, score), reasons };
+  }
+
+  async getRecommendations(userId: string, limit: number): Promise<RecommendedUniversity[]> {
+    const profile = await profileRepo.getByUserId(userId);
+    if (!profile) throw new HttpException(404, "Complete your academic profile to receive recommendations");
+    const universities = await universityRepo.getAll();
+    return universities
+      .map((university) => ({ ...toSafeUniversity(university), ...this.scoreUniversity(university, profile) }))
+      .sort((left, right) => right.score - left.score || (left.worldRanking || Number.MAX_SAFE_INTEGER) - (right.worldRanking || Number.MAX_SAFE_INTEGER))
+      .slice(0, limit);
   }
 
   async getByCountry(country: string): Promise<SafeUniversity[]> {

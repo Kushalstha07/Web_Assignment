@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import type { AdminUser } from "./types";
 
 export interface Counsellor {
   id: string;
@@ -34,6 +35,12 @@ export async function getCounsellors(available?: boolean, specialty?: string): P
 
 export async function getCounsellorById(id: string): Promise<{ success: boolean; data: Counsellor }> {
   return apiClient("GET", `/api/v1/counsellors/${id}`);
+}
+
+export async function getAssignedStudents(search?: string): Promise<{ success: boolean; message: string; data: AdminUser[] }> {
+  return apiClient("GET", "/api/v1/counsellors/me/students", {
+    params: search ? { search } : undefined,
+  });
 }
 
 export async function createCounsellor(data: Partial<Counsellor>): Promise<{ success: boolean; data: Counsellor; message: string }> {

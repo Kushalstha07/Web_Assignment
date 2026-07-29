@@ -4,25 +4,29 @@ import { CreateConversationDTOType, SendMessageDTOType, MarkReadDTOType } from "
 import { HttpException } from "../exceptions/http-exception";
 import { IConversation } from "../models/conversation.model";
 import { IMessage } from "../models/message.model";
+import { notificationService } from "./notification.service";
+import { UserMongoRepository } from "../repositories/user.repository";
 
 const msgRepo = new MessageMongoRepository();
+const userRepo = new UserMongoRepository();
 
 export type SafeConversation = { id: string; participants: string[]; title?: string; lastMessage?: string; lastMessageAt?: string; createdAt: string; updatedAt: string };
 export type SafeMessage = { id: string; conversationId: string; senderId: string; content: string; status: string; attachments: string[]; createdAt: string; updatedAt: string };
 
 function toSafeConversation(c: IConversation): SafeConversation {
-  const d = c as any;
-  return { id: c._id.toString(), participants: c.participants, title: c.title, lastMessage: c.lastMessage, lastMessageAt: c.lastMessageAt, createdAt: d.createdAt?.toISOString?.() || String(d.createdAt), updatedAt: d.updatedAt?.toISOString?.() || String(d.updatedAt) };
+  return { id: c._id.toString(), participants: c.participants, title: c.title, lastMessage: c.lastMessage, lastMessageAt: c.lastMessageAt, createdAt: c.createdAt.toISOString(), updatedAt: c.updatedAt.toISOString() };
 }
 
 function toSafeMessage(m: IMessage): SafeMessage {
-  const d = m as any;
-  return { id: m._id.toString(), conversationId: m.conversationId, senderId: m.senderId, content: m.content, status: m.status, attachments: m.attachments || [], createdAt: d.createdAt?.toISOString?.() || String(d.createdAt), updatedAt: d.updatedAt?.toISOString?.() || String(d.updatedAt) };
+  return { id: m._id.toString(), conversationId: m.conversationId, senderId: m.senderId, content: m.content, status: m.status, attachments: m.attachments || [], createdAt: m.createdAt.toISOString(), updatedAt: m.updatedAt.toISOString() };
 }
 
 export class MessageService {
   async createConversation(data: CreateConversationDTOType, userId: string): Promise<SafeConversation> {
     const allParticipants = [...new Set([...data.participantIds, userId])];
+    if (allParticipants.length < 2) throw new HttpException(400, "Choose at least one other participant");
+    const users = await userRepo.getUsersByIds(allParticipants);
+    if (users.length !== allParticipants.length) throw new HttpException(400, "One or more participants do not exist");
     const convData: ConversationType = { participants: allParticipants, title: data.title };
     const created = await msgRepo.createConversation(convData);
     return toSafeConversation(created);
@@ -48,6 +52,17 @@ export class MessageService {
     const msgData: MessageType = { conversationId: data.conversationId, senderId, content: data.content, status: "sent", attachments: data.attachments || [] };
     const msg = await msgRepo.sendMessage(msgData);
     await msgRepo.updateConversationLastMessage(data.conversationId, data.content.substring(0, 100));
+    await Promise.all(conv.participants
+      .filter((participantId) => participantId !== senderId)
+      .map((participantId) => notificationService.notify({
+        userId: participantId,
+        title: conv.title || "New message",
+        message: data.content.length > 120 ? `${data.content.slice(0, 117)}...` : data.content,
+        type: "info",
+        category: "message",
+        link: `/messages?conversation=${data.conversationId}`,
+        metadata: { conversationId: data.conversationId, messageId: msg._id.toString() },
+      })));
     return toSafeMessage(msg);
   }
 

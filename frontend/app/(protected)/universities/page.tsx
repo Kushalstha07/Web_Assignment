@@ -3,11 +3,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { getUniversities, getUniversitiesByCountry } from "@/lib/api/university.api";
+import { getUniversities } from "@/lib/api/university.api";
 import type { University, UniversityFilters } from "@/lib/api/university.api";
 import { UniversityCard } from "@/components/university/UniversityCard";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent } from "@/components/ui/Card";
 import { SkeletonCard } from "@/components/ui/Skeleton";
@@ -20,8 +19,6 @@ import {
   DollarSign,
   Award,
   Building2,
-  TrendingUp,
-  ChevronDown,
 } from "lucide-react";
 
 const COUNTRIES = [
@@ -107,15 +104,16 @@ export default function UniversitiesPage() {
       } else {
         setError(response.message);
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch universities");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to fetch universities");
     } finally {
       setLoading(false);
     }
   }, [appliedFilters, page]);
 
   useEffect(() => {
-    fetchUniversities();
+    const timer = window.setTimeout(() => void fetchUniversities(), 0);
+    return () => window.clearTimeout(timer);
   }, [fetchUniversities]);
 
   // Apply filters
@@ -162,7 +160,7 @@ export default function UniversitiesPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-[#0F172A]">Find Your Perfect Fit</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">Find Your Perfect Fit</h1>
         <p className="mt-1 text-sm text-[#64748B]">
           Discover universities that match your academic profile and preferences.
         </p>
@@ -354,7 +352,7 @@ export default function UniversitiesPage() {
 
       {/* University Grid */}
       {loading ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <SkeletonCard key={i} />
           ))}
@@ -372,7 +370,7 @@ export default function UniversitiesPage() {
         </div>
       ) : (
         <>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {universities.map((uni) => (
               <UniversityCard
                 key={uni.id}

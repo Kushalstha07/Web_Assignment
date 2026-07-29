@@ -11,6 +11,10 @@ export interface IUser extends UserType, Document {
   _id: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
+  resetPasswordTokenHash?: string;
+  resetPasswordExpiresAt?: Date;
+  passwordChangedAt?: Date;
+  sessionVersion: number;
 }
 
 const UserMongoSchema: Schema<IUser> = new Schema(
@@ -87,6 +91,26 @@ const UserMongoSchema: Schema<IUser> = new Schema(
     profileImage: {
       type: String,
       default: null,
+    },
+    resetPasswordTokenHash: {
+      type: String,
+      select: false,
+      default: null,
+    },
+    resetPasswordExpiresAt: {
+      type: Date,
+      select: false,
+      default: null,
+    },
+    passwordChangedAt: {
+      type: Date,
+      select: false,
+      default: null,
+    },
+    sessionVersion: {
+      type: Number,
+      select: false,
+      default: 0,
     },
   },
   {

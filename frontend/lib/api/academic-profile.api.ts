@@ -25,3 +25,7 @@ export async function saveStep2(payload: Step2Academic): Promise<ApiResponse<Aca
 export async function saveStep3(payload: Step3Preferences): Promise<ApiResponse<AcademicProfile>> {
   return apiClient("PUT", "/api/v1/academic-profile/step-3", { body: payload });
 }
+
+export async function completeOnboarding(): Promise<ApiResponse<AcademicProfile>> {
+  return apiClient("POST", "/api/v1/academic-profile/complete");
+}

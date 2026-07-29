@@ -1,41 +1,21 @@
 import request from "supertest";
-import mongoose from "mongoose";
+import jwt from "jsonwebtoken";
 import app from "../app";
-import { CounsellorModel } from "../models/counsellor.model";
-import { UserModel } from "../models/user.model";
+import { SECRET_KEY } from "../configs/constant";
 
 let adminToken: string;
+let counsellorToken: string;
 let counsellorId: string;
 
 beforeAll(async () => {
-  const testUri = process.env.MONGODB_URI || "mongodb://localhost:27017/edu-global-test";
-  await mongoose.connect(testUri);
-
-  await request(app).post("/api/v1/auth/register").send({
-    fullName: "Couns Test Admin",
-    username: "counsadmin",
-    email: "counsadmin@test.com",
-    phoneNumber: "1234567890",
-    studyLevel: "postgraduate",
-    destination: "usa",
-    fieldOfStudy: "Admin",
-    intake: "fall",
-    budget: "20k-35k",
-    password: "password123",
-    role: "admin",
-  });
-
-  const adminRes = await request(app).post("/api/v1/auth/login").send({
-    email: "counsadmin@test.com",
-    password: "password123",
-  });
-  adminToken = adminRes.body.data.token;
-});
-
-afterAll(async () => {
-  await CounsellorModel.deleteMany({});
-  await UserModel.deleteMany({ email: "counsadmin@test.com" });
-  await mongoose.disconnect();
+  adminToken = jwt.sign(
+    { id: "counsellor-admin", email: "counsadmin@test.com", role: "admin" },
+    SECRET_KEY,
+  );
+  counsellorToken = jwt.sign(
+    { id: "507f1f77bcf86cd799439011", email: "jane@example.com", role: "counsellor" },
+    SECRET_KEY,
+  );
 });
 
 describe("Counsellor API", () => {
@@ -69,6 +49,22 @@ describe("Counsellor API", () => {
     const res = await request(app).get(`/api/v1/counsellors/${counsellorId}`);
     expect(res.status).toBe(200);
     expect(res.body.data.fullName).toBe("Dr. Jane Smith");
+  });
+
+  it("should let a counsellor fetch and update their own profile", async () => {
+    const mine = await request(app)
+      .get("/api/v1/counsellors/me")
+      .set("Authorization", `Bearer ${counsellorToken}`);
+    expect(mine.status).toBe(200);
+    expect(mine.body.data.id).toBe(counsellorId);
+
+    const updated = await request(app)
+      .patch("/api/v1/counsellors/me")
+      .set("Authorization", `Bearer ${counsellorToken}`)
+      .send({ bio: "Updated by the counsellor", available: false });
+    expect(updated.status).toBe(200);
+    expect(updated.body.data.bio).toBe("Updated by the counsellor");
+    expect(updated.body.data.available).toBe(false);
   });
 
   it("should return 400 for missing required fields", async () => {

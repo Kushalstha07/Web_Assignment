@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { FileDropzone } from "@/components/ui/FileDropzone";
 import { Button } from "@/components/ui/Button";
-import { saveStep2 } from "@/lib/api/academic-profile.api";
+import { getMyProfile, saveStep2 } from "@/lib/api/academic-profile.api";
+import { uploadDocument } from "@/lib/api/document.api";
+import { ApiError } from "@/lib/api/client";
+import { SkeletonCard } from "@/components/ui/Skeleton";
 import { Step2AcademicSchema } from "@/lib/schemas/academic-profile.schema";
 import type { z } from "zod";
 
@@ -23,6 +26,7 @@ const testTypeOptions = [
 export default function Step2Page() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [draftLoading, setDraftLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [transcriptFile, setTranscriptFile] = useState<File | null>(null);
   const [formData, setFormData] = useState<FormData>({
@@ -30,6 +34,25 @@ export default function Step2Page() {
     testType: undefined,
     testScore: undefined,
   });
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void getMyProfile()
+        .then((result) => {
+          const profile = result.data;
+          setFormData({ gpa: profile.gpa, testType: profile.testType, testScore: profile.testScore });
+        })
+        .catch((cause) => {
+          if (cause instanceof ApiError && cause.status === 404) {
+            router.replace("/onboarding/step-1");
+            return;
+          }
+          setError(cause instanceof Error ? cause.message : "Failed to load your saved profile");
+        })
+        .finally(() => setDraftLoading(false));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,6 +63,7 @@ export default function Step2Page() {
       const validated = Step2AcademicSchema.parse(formData);
       const result = await saveStep2(validated);
       if (result.success) {
+        if (transcriptFile) await uploadDocument(transcriptFile, "transcript", "Uploaded during onboarding");
         router.push("/onboarding/step-3");
       } else {
         setError(result.message || "Failed to save");
@@ -54,6 +78,8 @@ export default function Step2Page() {
       setLoading(false);
     }
   };
+
+  if (draftLoading) return <SkeletonCard />;
 
   return (
     <Card>
@@ -92,6 +118,9 @@ export default function Step2Page() {
             <Input
               label="Test Score (optional)"
               type="number"
+              step="0.01"
+              min="0"
+              max={formData.testType === "IELTS" ? "9" : formData.testType === "TOEFL" ? "120" : formData.testType === "GRE" ? "340" : formData.testType === "GMAT" ? "800" : "800"}
               placeholder="e.g. 7.5"
               value={formData.testScore?.toString() || ""}
               onChange={(e) => setFormData({ ...formData, testScore: e.target.value ? parseFloat(e.target.value) : undefined })}

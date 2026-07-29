@@ -46,7 +46,7 @@ export class DocumentMongoRepository implements IDocumentRepository {
   }
 
   async update(id: string, data: UpdateDocumentDTOType): Promise<IDocument | null> {
-    const updated = await DocumentModel.findByIdAndUpdate(id, { $set: data }, { new: true });
+    const updated = await DocumentModel.findByIdAndUpdate(id, { $set: data }, { returnDocument: "after" });
     return updated ? (updated.toObject() as IDocument) : null;
   }
 

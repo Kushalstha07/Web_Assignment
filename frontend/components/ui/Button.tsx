@@ -2,21 +2,21 @@ import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "ghost" | "danger" | "ai";
+  variant?: "primary" | "secondary" | "ghost" | "danger" | "accent";
   size?: "sm" | "md" | "lg";
   loading?: boolean;
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "primary", size = "md", loading, disabled, children, ...props }, ref) => {
-    const baseStyles = "inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
+    const baseStyles = "inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-[background-color,border-color,color,box-shadow,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:translate-y-px disabled:pointer-events-none disabled:opacity-50";
 
     const variants = {
       primary: "bg-[#2563EB] text-white shadow-sm hover:bg-[#1D4ED8] focus-visible:ring-[#2563EB]",
       secondary: "bg-white text-[#0F172A] border border-[#E5E7EB] shadow-sm hover:bg-[#F8FAFC] focus-visible:ring-[#2563EB]",
       ghost: "text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#0F172A]",
       danger: "bg-[#EF4444] text-white shadow-sm hover:bg-[#DC2626] focus-visible:ring-[#EF4444]",
-      ai: "bg-gradient-to-r from-[#7C3AED] to-[#2563EB] text-white shadow-sm hover:shadow-md focus-visible:ring-[#7C3AED]",
+      accent: "bg-gradient-to-r from-[#7C3AED] to-[#2563EB] text-white shadow-sm hover:shadow-md focus-visible:ring-[#7C3AED]",
     };
 
     const sizes = {

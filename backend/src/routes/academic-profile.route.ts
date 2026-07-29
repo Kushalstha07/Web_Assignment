@@ -11,5 +11,6 @@ router.put("/", authenticate, (req, res) => controller.updateProfile(req, res));
 router.put("/step-1", authenticate, (req, res) => controller.saveStep1(req, res));
 router.put("/step-2", authenticate, (req, res) => controller.saveStep2(req, res));
 router.put("/step-3", authenticate, (req, res) => controller.saveStep3(req, res));
+router.post("/complete", authenticate, (req, res) => controller.completeOnboarding(req, res));
 
 export default router;

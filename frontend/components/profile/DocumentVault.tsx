@@ -5,6 +5,7 @@ interface DocumentVaultProps {
     name: string;
     size: string;
     status: string;
+    url?: string;
   }>;
 }
 
@@ -16,12 +17,9 @@ export default function DocumentVault({ documents }: DocumentVaultProps) {
           <span className="text-lg">📁</span>
           <h3 className="text-lg font-bold text-[#172B4D]">Document Vault</h3>
         </div>
-        <button className="rounded-xl border border-[#E8EEF7] px-4 py-2 text-sm font-semibold text-[#172B4D] transition hover:border-[#1565D8] hover:text-[#1565D8]">
-          + Upload New
-        </button>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {documents.map((doc, index) => (
           <div
             key={index}
@@ -41,20 +39,11 @@ export default function DocumentVault({ documents }: DocumentVaultProps) {
             <p className="mt-1 text-xs font-medium text-[#22C55E]">{doc.status}</p>
 
             {/* Hover Actions */}
-            <div className="absolute inset-0 flex items-center justify-center gap-2 rounded-xl bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-              <button className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-[#172B4D] hover:bg-[#1565D8] hover:text-white">
-                Preview
-              </button>
-              <button className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-[#172B4D] hover:bg-[#1565D8] hover:text-white">
-                Download
-              </button>
-              <button className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-600 hover:text-white">
-                Delete
-              </button>
-            </div>
+            {doc.url && <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"><a href={doc.url} target="_blank" rel="noreferrer" className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-[#172B4D] hover:bg-[#1565D8] hover:text-white">Preview</a></div>}
           </div>
         ))}
       </div>
+      {documents.length === 0 && <p className="py-8 text-center text-sm text-[#6B7280]">No uploaded documents are available.</p>}
     </div>
   );
 }

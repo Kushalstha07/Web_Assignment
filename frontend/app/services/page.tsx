@@ -12,9 +12,9 @@ export const metadata: Metadata = { title: "Services" };
 const services = [
   {
     icon: "🎯",
-    title: "AI University Matching",
+    title: "Personalized University Matching",
     description:
-      "Our advanced AI analyzes your academic profile, preferences, and goals to find the perfect university matches across 40+ countries.",
+      "Your academic profile and preferences are used to rank universities that fit your study goals and budget.",
     tags: [
       { label: "Included Free", color: "green" },
       { label: "Instant Results", color: "blue" },
@@ -69,7 +69,7 @@ const steps = [
   },
   {
     step: "02",
-    title: "Get AI-Matched Recommendations",
+    title: "Get Personalized Recommendations",
     description:
       "Receive personalized university recommendations with match scores, acceptance probabilities, and detailed comparisons.",
   },

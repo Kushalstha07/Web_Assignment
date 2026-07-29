@@ -5,6 +5,8 @@ export interface IAcademicProfile extends AcademicProfileType, Document {
   _id: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
+  onboardingStep: number;
+  onboardingCompletedAt?: Date;
 }
 
 const AcademicProfileMongoSchema: Schema<IAcademicProfile> = new Schema(
@@ -49,7 +51,7 @@ const AcademicProfileMongoSchema: Schema<IAcademicProfile> = new Schema(
     testScore: {
       type: Number,
       min: 0,
-      max: 120,
+      max: 800,
     },
     preferredCountries: {
       type: [String],
@@ -69,6 +71,16 @@ const AcademicProfileMongoSchema: Schema<IAcademicProfile> = new Schema(
       min: 0,
       max: 100,
       default: 0,
+    },
+    onboardingStep: {
+      type: Number,
+      min: 1,
+      max: 5,
+      default: 1,
+    },
+    onboardingCompletedAt: {
+      type: Date,
+      default: null,
     },
   },
   {

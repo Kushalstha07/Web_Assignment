@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { getMyProfile } from "@/lib/api/academic-profile.api";
+import { completeOnboarding, getMyProfile } from "@/lib/api/academic-profile.api";
+import { ApiError } from "@/lib/api/client";
 import type { AcademicProfile } from "@/lib/schemas/academic-profile.schema";
 
 export default function Step4Page() {
@@ -13,27 +14,40 @@ export default function Step4Page() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [profile, setProfile] = useState<AcademicProfile | null>(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    async function fetchProfile() {
-      try {
-        const result = await getMyProfile();
-        if (result.success && result.data) {
-          setProfile(result.data as AcademicProfile);
-        }
-      } catch (error) {
-        console.error("Failed to load profile", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchProfile();
-  }, []);
+    const timer = window.setTimeout(() => {
+      void getMyProfile()
+        .then((result) => {
+          if (result.data.onboardingStep < 4) {
+            router.replace(`/onboarding/step-${result.data.onboardingStep}`);
+            return;
+          }
+          setProfile(result.data);
+        })
+        .catch((cause) => {
+          if (cause instanceof ApiError && cause.status === 404) {
+            router.replace("/onboarding/step-1");
+            return;
+          }
+          setError(cause instanceof Error ? cause.message : "Failed to load your profile");
+        })
+        .finally(() => setLoading(false));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [router]);
 
   const handleComplete = async () => {
-    setSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    router.push("/onboarding/step-5");
+    try {
+      setSubmitting(true);
+      setError("");
+      await completeOnboarding();
+      router.push("/onboarding/step-5");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Failed to submit your profile");
+      setSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -53,7 +67,7 @@ export default function Step4Page() {
     return (
       <Card>
         <CardContent className="p-6 lg:p-8">
-          <p className="text-sm text-[#EF4444]">Failed to load profile. Please try again.</p>
+          <p className="text-sm text-[#EF4444]">{error || "Failed to load profile. Please try again."}</p>
         </CardContent>
       </Card>
     );
@@ -62,6 +76,7 @@ export default function Step4Page() {
   return (
     <Card>
       <CardContent className="p-6 lg:p-8">
+        {error && <div className="mb-6 rounded-[12px] border border-[#EF4444] bg-[#FEF2F2] p-4 text-sm text-[#EF4444]">{error}</div>}
         <div className="mb-6">
           <h2 className="text-xl font-bold text-[#0F172A]">Review Your Profile</h2>
           <p className="mt-1 text-sm text-[#64748B]">Make sure everything looks good before submitting</p>

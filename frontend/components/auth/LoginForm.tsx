@@ -29,14 +29,6 @@ function EyeOffIcon() {
   );
 }
 
-/**
- * Set a cookie that expires 30 days from now
- */
-function setClientCookie(name: string, value: string): void {
-  const maxAge = 60 * 60 * 24 * 30; // 30 days
-  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; sameSite=lax`;
-}
-
 function FieldError({
   errors,
 }: {
@@ -70,15 +62,14 @@ export function LoginForm({
   const [showPassword, setShowPassword] = useState(false);
   const passwordRef = useRef<HTMLInputElement>(null);
 
-  // When login succeeds, set the cookie client-side, refresh auth context, then navigate
+  // The server action has already set the HTTP-only session cookie.
   useEffect(() => {
-    if (state.success && state.token) {
-      setClientCookie("client-token", state.token);
+    if (state.success) {
       refreshUser().then(() => {
         router.push("/dashboard");
       });
     }
-  }, [state.success, state.token, router, refreshUser]);
+  }, [state.success, router, refreshUser]);
 
   return (
     <>
@@ -88,7 +79,7 @@ export function LoginForm({
         </p>
       ) : null}
 
-      {state.success && state.token ? (
+      {state.success ? (
         <p className="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
           Login successful! Redirecting to dashboard...
         </p>
@@ -180,7 +171,7 @@ export function LoginForm({
         {/* Sign In */}
         <button
           type="submit"
-          disabled={isPending || (state.success && !!state.token)}
+          disabled={isPending || state.success}
           className="relative h-12 w-full overflow-hidden rounded-xl bg-[#1D4ED8] text-sm font-bold text-white shadow-lg shadow-[#1D4ED8]/20 transition-all hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isPending ? "Signing in..." : "Sign In"}
@@ -234,7 +225,7 @@ export function LoginForm({
 
       {/* Registration Link */}
       <p className="mt-5 text-center text-xs text-[#64748B]">
-        Don't have an account?{" "}
+        Don&apos;t have an account?{" "}
         <Link
           href="/register"
           className="font-semibold text-[#1D4ED8] hover:underline"

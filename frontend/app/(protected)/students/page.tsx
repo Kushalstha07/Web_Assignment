@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { AdminGuard } from "@/components/auth/AdminGuard";
+import { RoleGuard } from "@/components/auth/RoleGuard";
 import { getUsers } from "@/lib/api/admin.api";
+import { getAssignedStudents } from "@/lib/api/counsellor.api";
 import type { AdminUser } from "@/lib/api/types";
 import { SkeletonTable } from "@/components/ui/Skeleton";
 import { Search } from "lucide-react";
@@ -15,7 +16,6 @@ export default function StudentsPage() {
 
   // Data states
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -24,23 +24,26 @@ export default function StudentsPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await getUsers(1, 100, search || undefined);
+      if (!user) return;
+      const response = user.role === "counsellor"
+        ? await getAssignedStudents(search || undefined)
+        : await getUsers(1, 100, search || undefined);
       if (response.success) {
         setUsers(response.data);
-        setTotal(response.meta.total);
       } else {
         setError(response.message);
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch users");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to fetch users");
     } finally {
       setLoading(false);
     }
-  }, [search]);
+  }, [search, user]);
 
   useEffect(() => {
     if (!authLoading && user) {
-      fetchUsers();
+      const timer = window.setTimeout(() => void fetchUsers(), 0);
+      return () => window.clearTimeout(timer);
     }
   }, [fetchUsers, authLoading, user]);
 
@@ -54,7 +57,7 @@ export default function StudentsPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-[#0F172A]">Students</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">Students</h1>
           <p className="mt-1 text-sm text-[#64748B]">Loading...</p>
         </div>
         <SkeletonTable rows={8} columns={7} />
@@ -69,19 +72,19 @@ export default function StudentsPage() {
   const students = users.filter(u => u.role === "student");
 
   return (
-    <AdminGuard>
+    <RoleGuard roles={["admin", "counsellor"]}>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-[#0F172A]">Students</h1>
-          <p className="mt-1 text-sm text-[#64748B]">Manage and track all student applications</p>
+          <p className="mt-1 text-sm text-[#64748B]">{user.role === "counsellor" ? "Students assigned through your application cases" : "Manage and track all student applications"}</p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid gap-6 md:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-[20px] border border-[#E5E7EB] bg-white p-6 shadow-sm">
             <p className="text-sm font-medium text-[#64748B]">Total Students</p>
-            <p className="mt-2 text-2xl font-bold text-[#0F172A]">{total}</p>
-            <p className="mt-1 text-xs text-[#64748B]">Registered users</p>
+            <p className="mt-2 text-2xl font-bold text-[#0F172A]">{students.length}</p>
+            <p className="mt-1 text-xs text-[#64748B]">Student accounts loaded</p>
           </div>
           <div className="rounded-[20px] border border-[#E5E7EB] bg-white p-6 shadow-sm">
             <p className="text-sm font-medium text-[#64748B]">Active</p>
@@ -89,26 +92,26 @@ export default function StudentsPage() {
             <p className="mt-1 text-xs text-[#22C55E]">Student accounts</p>
           </div>
           <div className="rounded-[20px] border border-[#E5E7EB] bg-white p-6 shadow-sm">
-            <p className="text-sm font-medium text-[#64748B]">Admins</p>
-            <p className="mt-2 text-2xl font-bold text-[#0F172A]">{users.filter(u => u.role === "admin").length}</p>
-            <p className="mt-1 text-xs text-[#64748B]">Admin accounts</p>
+            <p className="text-sm font-medium text-[#64748B]">Destinations</p>
+            <p className="mt-2 text-2xl font-bold text-[#0F172A]">{new Set(students.map((student) => student.destination)).size}</p>
+            <p className="mt-1 text-xs text-[#64748B]">Represented in this view</p>
           </div>
           <div className="rounded-[20px] border border-[#E5E7EB] bg-white p-6 shadow-sm">
-            <p className="text-sm font-medium text-[#64748B]">Total Users</p>
-            <p className="mt-2 text-2xl font-bold text-[#0F172A]">{users.length}</p>
-            <p className="mt-1 text-xs text-[#64748B]">Loaded in view</p>
+            <p className="text-sm font-medium text-[#64748B]">Study Fields</p>
+            <p className="mt-2 text-2xl font-bold text-[#0F172A]">{new Set(students.map((student) => student.fieldOfStudy)).size}</p>
+            <p className="mt-1 text-xs text-[#64748B]">Represented in this view</p>
           </div>
         </div>
 
         {/* Search */}
-        <div className="relative">
+        <div className="relative rounded-2xl border border-[#E7EDF6] bg-white p-4 shadow-sm">
           <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name or email..."
-            className="h-12 w-full max-w-md rounded-xl border border-[#E2E8F0] bg-white pl-11 pr-4 text-sm text-[#0F172A] outline-none transition placeholder:text-[#94A3B8] focus:border-[#1D4ED8] focus:ring-2 focus:ring-[#1D4ED8]/15"
+            className="h-12 w-full rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] pl-11 pr-4 text-sm text-[#0F172A] outline-none transition placeholder:text-[#94A3B8] focus:border-[#1D4ED8] focus:bg-white focus:ring-2 focus:ring-[#1D4ED8]/15 sm:max-w-lg"
           />
         </div>
 
@@ -134,7 +137,7 @@ export default function StudentsPage() {
         {/* Users Table */}
         {loading ? (
           <SkeletonTable rows={8} columns={7} />
-        ) : users.length === 0 ? (
+        ) : students.length === 0 ? (
           <div className="flex min-h-[300px] flex-col items-center justify-center rounded-2xl border border-dashed border-[#E2E8F0] bg-white">
             <Search className="h-12 w-12 text-[#94A3B8] mb-3" />
             <p className="text-sm font-medium text-[#64748B]">No users found</p>
@@ -150,7 +153,7 @@ export default function StudentsPage() {
         ) : (
           <div className="rounded-[20px] border border-[#E5E7EB] bg-white shadow-sm">
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="min-w-[900px] w-full">
                 <thead>
                   <tr className="border-b border-[#E5E7EB] bg-[#F8FAFC]">
                     <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#64748B]">Student</th>
@@ -162,7 +165,7 @@ export default function StudentsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E5E7EB]">
-                  {users.map((u) => (
+                  {students.map((u) => (
                     <tr key={u.id} className="transition-all hover:bg-[#F8FAFC]">
                       <td className="whitespace-nowrap px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -198,23 +201,23 @@ export default function StudentsPage() {
 
             {/* Pagination info */}
             <div className="border-t border-[#E5E7EB] px-6 py-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-[#64748B]">
-                  Showing {users.length} of {total} users
+                  Showing {students.length} student accounts
                 </p>
-                <div className="flex gap-2">
+                {user.role === "admin" && <div className="flex gap-2">
                   <a
                     href="/admin/users"
                     className="rounded-[12px] bg-[#2563EB] px-5 py-2 text-sm font-semibold text-white hover:bg-[#1D4ED8] transition-all"
                   >
                     Manage All Users
                   </a>
-                </div>
+                </div>}
               </div>
             </div>
           </div>
         )}
       </div>
-    </AdminGuard>
+    </RoleGuard>
   );
 }

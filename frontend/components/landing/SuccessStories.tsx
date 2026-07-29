@@ -18,7 +18,7 @@ export default function SuccessStories() {
     },
     {
       quote:
-        "What sets EduGlobal apart is their combination of AI technology and human expertise. The perfect balance for navigating complex applications.",
+        "What sets EduGlobal apart is the combination of practical tools and human expertise. It made a complex application process much easier to navigate.",
       name: "Amara Okafor",
       university: "Stanford Graduate School",
       color: "#2563EB",

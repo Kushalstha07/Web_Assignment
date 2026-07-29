@@ -51,6 +51,9 @@ export class AdminController {
       if (!result.success) {
         return ApiResponseHelper.error(res, z.prettifyError(result.error), 400);
       }
+      if (id === req.user?.id && result.data.role && result.data.role !== "admin") {
+        return ApiResponseHelper.error(res, "You cannot remove your own administrator role", 400);
+      }
 
       const user = await userService.updateUserByAdmin(id, result.data);
       return ApiResponseHelper.success(res, user, "User updated successfully");
@@ -62,6 +65,9 @@ export class AdminController {
   async deleteUser(req: Request, res: Response) {
     try {
       const id = req.params.id as string;
+      if (id === req.user?.id) {
+        return ApiResponseHelper.error(res, "You cannot delete your own administrator account", 400);
+      }
       await userService.deleteUserByAdmin(id);
       return ApiResponseHelper.success(res, null, "User deleted successfully");
     } catch (err: any) {

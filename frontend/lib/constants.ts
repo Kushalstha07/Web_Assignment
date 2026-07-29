@@ -33,12 +33,13 @@ export const DESIGN_TOKENS = {
 };
 
 export const PIPELINE_STAGES = [
-  "Lead",
-  "Consultation",
-  "Application",
-  "Offer Letter",
-  "Visa",
-  "Enrolled",
+  "documents-pending",
+  "documents-uploaded",
+  "verified",
+  "interview-scheduled",
+  "interview-completed",
+  "decision-pending",
+  "decision-made",
 ] as const;
 
 export const USER_ROLES = {

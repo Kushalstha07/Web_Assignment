@@ -47,7 +47,7 @@ export class ScholarshipMongoRepository implements IScholarshipRepository {
   }
 
   async update(id: string, data: UpdateScholarshipDTOType): Promise<IScholarship | null> {
-    const updated = await ScholarshipModel.findByIdAndUpdate(id, { $set: data }, { new: true });
+    const updated = await ScholarshipModel.findByIdAndUpdate(id, { $set: data }, { returnDocument: "after" });
     return updated ? (updated.toObject() as IScholarship) : null;
   }
 

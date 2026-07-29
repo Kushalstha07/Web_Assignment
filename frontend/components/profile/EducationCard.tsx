@@ -17,7 +17,6 @@ export default function EducationCard({ education }: EducationCardProps) {
           <span className="text-lg">🎓</span>
           <h3 className="text-lg font-bold text-[#172B4D]">Education History</h3>
         </div>
-        <button className="text-sm font-semibold text-[#1565D8] hover:underline">See All</button>
       </div>
 
       {/* Timeline Container */}
@@ -26,7 +25,7 @@ export default function EducationCard({ education }: EducationCardProps) {
         <div className="absolute left-[36px] right-[36px] top-[36px] h-1 rounded-full bg-[#DCE8FF]" />
 
         {/* Milestones Grid */}
-        <div className="grid grid-cols-3 gap-6 w-full">
+        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3 w-full">
           {education.map((edu, index) => {
             const isCurrent = edu.year.toLowerCase().includes("current");
             const yearShort = edu.year.split(" ")[0];
@@ -78,6 +77,7 @@ export default function EducationCard({ education }: EducationCardProps) {
             );
           })}
         </div>
+        {education.length === 0 && <p className="py-8 text-center text-sm text-[#6B7280]">No academic profile record is available.</p>}
       </div>
     </div>
   );

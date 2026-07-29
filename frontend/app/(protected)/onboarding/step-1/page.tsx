@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
-import { saveStep1 } from "@/lib/api/academic-profile.api";
+import { getMyProfile, saveStep1 } from "@/lib/api/academic-profile.api";
+import { ApiError } from "@/lib/api/client";
+import { SkeletonCard } from "@/components/ui/Skeleton";
 import { Step1PersonalSchema } from "@/lib/schemas/academic-profile.schema";
-import type { Step1Personal } from "@/lib/schemas/academic-profile.schema";
 import type { z } from "zod";
 
 type FormData = z.infer<typeof Step1PersonalSchema>;
@@ -24,6 +25,7 @@ const qualificationOptions = [
 export default function Step1Page() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [draftLoading, setDraftLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>({
     highestQualification: "bachelor",
@@ -32,8 +34,29 @@ export default function Step1Page() {
     fieldOfStudy: "",
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void getMyProfile()
+        .then((result) => {
+          const profile = result.data;
+          setFormData({
+            highestQualification: profile.highestQualification,
+            institution: profile.institution,
+            graduationYear: profile.graduationYear,
+            fieldOfStudy: profile.fieldOfStudy,
+          });
+        })
+        .catch((cause) => {
+          if (!(cause instanceof ApiError && cause.status === 404)) {
+            setError(cause instanceof Error ? cause.message : "Failed to load your saved profile");
+          }
+        })
+        .finally(() => setDraftLoading(false));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const persist = async (destination: string) => {
     setLoading(true);
     setError(null);
 
@@ -41,7 +64,7 @@ export default function Step1Page() {
       const validated = Step1PersonalSchema.parse(formData);
       const result = await saveStep1(validated);
       if (result.success) {
-        router.push("/onboarding/step-2");
+        router.push(destination);
       } else {
         setError(result.message || "Failed to save");
       }
@@ -55,6 +78,13 @@ export default function Step1Page() {
       setLoading(false);
     }
   };
+
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    void persist("/onboarding/step-2");
+  };
+
+  if (draftLoading) return <SkeletonCard />;
 
   return (
     <Card>
@@ -106,7 +136,7 @@ export default function Step1Page() {
           </div>
 
           <div className="flex items-center justify-end gap-4">
-            <Button type="button" variant="secondary" onClick={() => router.push("/dashboard")}>
+            <Button type="button" variant="secondary" disabled={loading} onClick={() => void persist("/dashboard")}>
               Save as Draft
             </Button>
             <Button type="submit" loading={loading}>

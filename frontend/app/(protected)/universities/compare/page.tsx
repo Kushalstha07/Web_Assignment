@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getUniversityById, getUniversities } from "@/lib/api/university.api";
@@ -13,8 +13,6 @@ import {
   ArrowLeft,
   Plus,
   X,
-  CheckCircle2,
-  XCircle,
   TrendingUp,
   GraduationCap,
   DollarSign,
@@ -22,15 +20,24 @@ import {
   MapPin,
   Sparkles,
   BarChart3,
+  type LucideIcon,
 } from "lucide-react";
 
-const COMPARISON_METRICS = [
-  { key: "worldRanking", label: "World Ranking", icon: BarChart3 },
-  { key: "tuitionFee", label: "Tuition (Annual)", icon: DollarSign, format: (v: number) => `$${v.toLocaleString()}` },
-  { key: "rating", label: "Rating", icon: Star, format: (v: number) => `${v.toFixed(1)} / 5.0` },
-  { key: "matchScore", label: "Match Score", icon: TrendingUp, format: (v: number) => `${v}%`, highlight: true },
-  { key: "programs", label: "Programs Available", icon: GraduationCap, format: (v: string[]) => `${v.length} programs` },
-  { key: "city", label: "Location", icon: MapPin },
+interface ComparisonMetric {
+  key: string;
+  label: string;
+  icon: LucideIcon;
+  value: (university: University) => string | number;
+  numeric?: (university: University) => number | undefined;
+}
+
+const COMPARISON_METRICS: ComparisonMetric[] = [
+  { key: "worldRanking", label: "World Ranking", icon: BarChart3, value: (university: University) => university.worldRanking ?? "—", numeric: (university: University) => university.worldRanking },
+  { key: "tuitionFee", label: "Tuition (Annual)", icon: DollarSign, value: (university: University) => `$${university.tuitionFee.toLocaleString()}`, numeric: (university: University) => university.tuitionFee },
+  { key: "rating", label: "Rating", icon: Star, value: (university: University) => university.rating == null ? "—" : `${university.rating.toFixed(1)} / 5.0`, numeric: (university: University) => university.rating },
+  { key: "matchScore", label: "Match Score", icon: TrendingUp, value: (university: University) => university.matchScore == null ? "—" : `${university.matchScore}%`, numeric: (university: University) => university.matchScore },
+  { key: "programs", label: "Programs Available", icon: GraduationCap, value: (university: University) => `${university.programs.length} programs` },
+  { key: "city", label: "Location", icon: MapPin, value: (university: University) => university.city },
 ];
 
 export default function ComparePage() {
@@ -159,7 +166,7 @@ export default function ComparePage() {
         </div>
       ) : (
         <>
-          {/* AI Expert Insight Panel */}
+          {/* Comparison summary */}
           {universities.length >= 2 && (
             <Card padding="md" className="border border-[#7C3AED]/20 bg-gradient-to-r from-[#7C3AED]/5 to-[#2563EB]/5">
               <CardContent className="p-0">
@@ -168,13 +175,11 @@ export default function ComparePage() {
                     <Sparkles className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-[#0F172A]">AI Expert Insight</h3>
+                    <h3 className="text-sm font-bold text-[#0F172A]">Comparison Summary</h3>
                     <p className="mt-1 text-sm text-[#64748B]">
-                      Based on your academic profile,{" "}
-                      <strong className="text-[#2563EB]">{universities[0]?.name}</strong> offers the best
-                      overall match with higher ranking and program variety.{" "}
-                      <strong className="text-[#7C3AED]">{universities[1]?.name}</strong> is more
-                      budget-friendly while still maintaining strong academic standards.
+                      Compare <strong className="text-[#2563EB]">{universities[0]?.name}</strong> and{" "}
+                      <strong className="text-[#7C3AED]">{universities[1]?.name}</strong> using the
+                      rankings, programs, tuition fees, and locations listed below.
                     </p>
                   </div>
                 </div>
@@ -235,16 +240,14 @@ export default function ComparePage() {
               {/* Metric Rows */}
               {COMPARISON_METRICS.map((metric) => {
                 const Icon = metric.icon;
-                const values = universities.map((uni) => {
-                  const val = (uni as any)[metric.key];
-                  if (metric.format) return metric.format(val);
-                  return val ?? "—";
-                });
+                const values = universities.map(metric.value);
 
                 // Find best value for highlighting
-                const numericValues = values
-                  .map((v, i) => ({ val: (universities[i] as any)[metric.key], idx: i }))
-                  .filter((v) => typeof v.val === "number" && !isNaN(v.val));
+                const numericValues = metric.numeric
+                  ? universities
+                      .map((university, idx) => ({ val: metric.numeric?.(university), idx }))
+                      .filter((item): item is { val: number; idx: number } => typeof item.val === "number" && !Number.isNaN(item.val))
+                  : [];
 
                 const bestIdx =
                   numericValues.length > 0

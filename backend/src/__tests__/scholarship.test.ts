@@ -1,41 +1,16 @@
 import request from "supertest";
-import mongoose from "mongoose";
+import jwt from "jsonwebtoken";
 import app from "../app";
-import { ScholarshipModel } from "../models/scholarship.model";
-import { UserModel } from "../models/user.model";
+import { SECRET_KEY } from "../configs/constant";
 
 let adminToken: string;
 let scholarshipId: string;
 
 beforeAll(async () => {
-  const testUri = process.env.MONGODB_URI || "mongodb://localhost:27017/edu-global-test";
-  await mongoose.connect(testUri);
-
-  await request(app).post("/api/v1/auth/register").send({
-    fullName: "Scholarship Admin",
-    username: "scholadmin",
-    email: "scholadmin@test.com",
-    phoneNumber: "1234567890",
-    studyLevel: "postgraduate",
-    destination: "usa",
-    fieldOfStudy: "Admin",
-    intake: "fall",
-    budget: "20k-35k",
-    password: "password123",
-    role: "admin",
-  });
-
-  const adminRes = await request(app).post("/api/v1/auth/login").send({
-    email: "scholadmin@test.com",
-    password: "password123",
-  });
-  adminToken = adminRes.body.data.token;
-});
-
-afterAll(async () => {
-  await ScholarshipModel.deleteMany({});
-  await UserModel.deleteMany({ email: "scholadmin@test.com" });
-  await mongoose.disconnect();
+  adminToken = jwt.sign(
+    { id: "scholarship-admin", email: "scholadmin@test.com", role: "admin" },
+    SECRET_KEY,
+  );
 });
 
 describe("Scholarship API", () => {

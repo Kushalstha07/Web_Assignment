@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { loginUser, registerUser } from "@/lib/api/auth.api";
 import { loginSchema, registerSchema } from "@/lib/schemas/auth.schema";
 import type { AuthFormState } from "@/lib/types/auth-form.state";
+import { ApiError } from "@/lib/api/client";
 
 function formatZodErrors(
   issues: { path: PropertyKey[]; message: string }[],
@@ -42,8 +43,9 @@ export async function registerAction(
     };
   }
 
-  const { confirmPassword: _confirmPassword, terms: _terms, ...payload } =
-    parsed.data;
+  const { confirmPassword, terms, ...payload } = parsed.data;
+  void confirmPassword;
+  void terms;
 
   let response;
   try {
@@ -52,8 +54,9 @@ export async function registerAction(
     console.error("Registration error:", error);
     return {
       success: false,
-      message:
-        "Unable to connect to the server. Please make sure the backend is running on port 4000 and try again.",
+      message: error instanceof ApiError
+        ? error.message
+        : "Unable to connect to the server. Please make sure the backend is running on port 4000 and try again.",
     };
   }
 
@@ -90,8 +93,9 @@ export async function loginAction(
     console.error("Login error:", error);
     return {
       success: false,
-      message:
-        "Unable to connect to the server. Please make sure the backend is running on port 4000 and try again.",
+      message: error instanceof ApiError
+        ? error.message
+        : "Unable to connect to the server. Please make sure the backend is running on port 4000 and try again.",
     };
   }
 
@@ -113,9 +117,7 @@ export async function loginAction(
     path: "/",
   });
 
-  // Return the token so the client can set the non-httpOnly cookie reliably
   return {
     success: true,
-    token: response.data.token,
   };
 }

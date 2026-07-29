@@ -3,8 +3,11 @@ import { AppointmentType } from "../types/appointment.type";
 import { CreateAppointmentDTOType, UpdateAppointmentDTOType, CancelAppointmentDTOType } from "../dtos/appointment.dto";
 import { HttpException } from "../exceptions/http-exception";
 import { IAppointment } from "../models/appointment.model";
+import { CounsellorMongoRepository } from "../repositories/counsellor.repository";
+import { notificationService } from "./notification.service";
 
 const appointmentRepo = new AppointmentMongoRepository();
+const counsellorRepo = new CounsellorMongoRepository();
 
 export type SafeAppointment = {
   id: string;
@@ -40,7 +43,26 @@ function toSafeAppointment(a: IAppointment): SafeAppointment {
 }
 
 export class AppointmentService {
+  private async canAccess(
+    appointment: IAppointment,
+    userId: string,
+    role: string,
+  ): Promise<boolean> {
+    if (role === "admin") return true;
+    if (role === "student") return appointment.studentId === userId;
+    if (role === "counsellor") {
+      const counsellor = await counsellorRepo.getByUserId(userId);
+      return counsellor?._id.toString() === appointment.counsellorId;
+    }
+    return false;
+  }
+
   async create(data: CreateAppointmentDTOType, studentId: string): Promise<SafeAppointment> {
+    const counsellor = await counsellorRepo.getById(data.counsellorId);
+    if (!counsellor) throw new HttpException(404, "Counsellor not found");
+    if (!counsellor.available) {
+      throw new HttpException(409, "Counsellor is not accepting appointments");
+    }
     const appData: AppointmentType = {
       studentId,
       counsellorId: data.counsellorId,
@@ -51,20 +73,48 @@ export class AppointmentService {
       notes: data.notes,
     };
     const created = await appointmentRepo.create(appData);
+    await Promise.all([
+      notificationService.notify({
+        userId: counsellor.userId,
+        title: "New appointment booked",
+        message: `A student booked ${data.date} from ${data.startTime} to ${data.endTime}.`,
+        type: "info",
+        category: "appointment",
+        link: "/appointments",
+        metadata: { appointmentId: created._id.toString() },
+      }),
+      notificationService.notify({
+        userId: studentId,
+        title: "Appointment booked",
+        message: `Your appointment with ${counsellor.fullName} is scheduled for ${data.date} at ${data.startTime}.`,
+        type: "success",
+        category: "appointment",
+        link: "/appointments",
+        metadata: { appointmentId: created._id.toString() },
+      }),
+    ]);
     return toSafeAppointment(created);
   }
 
   async getById(id: string, userId: string, role: string): Promise<SafeAppointment> {
     const app = await appointmentRepo.getById(id);
     if (!app) throw new HttpException(404, "Appointment not found");
-    if (role !== "admin" && app.studentId !== userId && app.counsellorId !== userId) {
+    if (!(await this.canAccess(app, userId, role))) {
       throw new HttpException(403, "You can only access your own appointments");
     }
     return toSafeAppointment(app);
   }
 
-  async getMyAppointments(studentId: string): Promise<SafeAppointment[]> {
-    const apps = await appointmentRepo.getByStudentId(studentId);
+  async getMyAppointments(userId: string, role: string): Promise<SafeAppointment[]> {
+    if (role === "counsellor") {
+      const counsellor = await counsellorRepo.getByUserId(userId);
+      if (!counsellor) throw new HttpException(404, "Counsellor profile not found");
+      const assigned = await appointmentRepo.getByCounsellorId(
+        counsellor._id.toString(),
+      );
+      return assigned.map(toSafeAppointment);
+    }
+    const apps = await appointmentRepo.getByStudentId(userId);
     return apps.map(toSafeAppointment);
   }
 
@@ -86,7 +136,7 @@ export class AppointmentService {
   async cancel(id: string, data: CancelAppointmentDTOType, userId: string, role: string): Promise<SafeAppointment> {
     const app = await appointmentRepo.getById(id);
     if (!app) throw new HttpException(404, "Appointment not found");
-    if (role !== "admin" && app.studentId !== userId && app.counsellorId !== userId) {
+    if (!(await this.canAccess(app, userId, role))) {
       throw new HttpException(403, "You can only cancel your own appointments");
     }
     const updated = await appointmentRepo.update(id, {
@@ -94,17 +144,43 @@ export class AppointmentService {
       cancellationReason: data.cancellationReason,
     } as any);
     if (!updated) throw new HttpException(500, "Failed to cancel appointment");
+    const counsellor = await counsellorRepo.getById(app.counsellorId);
+    const recipients = new Set<string>([app.studentId]);
+    if (counsellor) recipients.add(counsellor.userId);
+    recipients.delete(userId);
+    await Promise.all([...recipients].map((recipientId) => notificationService.notify({
+      userId: recipientId,
+      title: "Appointment cancelled",
+      message: `The appointment on ${app.date} at ${app.startTime} was cancelled.`,
+      type: "warning",
+      category: "appointment",
+      link: "/appointments",
+      metadata: { appointmentId: id },
+    })));
     return toSafeAppointment(updated);
   }
 
   async update(id: string, data: UpdateAppointmentDTOType, userId: string, role: string): Promise<SafeAppointment> {
     const app = await appointmentRepo.getById(id);
     if (!app) throw new HttpException(404, "Appointment not found");
-    if (role !== "admin" && app.studentId !== userId && app.counsellorId !== userId) {
+    if (!(await this.canAccess(app, userId, role))) {
       throw new HttpException(403, "You can only update your own appointments");
     }
     const updated = await appointmentRepo.update(id, data);
     if (!updated) throw new HttpException(500, "Failed to update appointment");
+    const counsellor = await counsellorRepo.getById(app.counsellorId);
+    const recipientId = role === "student" ? counsellor?.userId : app.studentId;
+    if (recipientId && recipientId !== userId) {
+      await notificationService.notify({
+        userId: recipientId,
+        title: "Appointment updated",
+        message: `The appointment on ${updated.date} at ${updated.startTime} has been updated.`,
+        type: "info",
+        category: "appointment",
+        link: "/appointments",
+        metadata: { appointmentId: id },
+      });
+    }
     return toSafeAppointment(updated);
   }
 }

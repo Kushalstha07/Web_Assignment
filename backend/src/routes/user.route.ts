@@ -2,20 +2,24 @@ import { Router } from "express";
 import { UserController } from "../controllers/user.controller";
 import { authenticate } from "../middlewares/auth.middleware";
 import { upload } from "../middlewares/upload.middleware";
+import { AUTH_COOKIE_OPTIONS } from "../configs/auth";
+import { loginRateLimiter, passwordResetRateLimiter } from "../middlewares/rate-limit.middleware";
+import { noStore } from "../middlewares/security.middleware";
 
 const userRouter = Router();
 const userController = new UserController();
 
+userRouter.use(noStore);
 userRouter.post("/register", userController.createUser);
-userRouter.post("/login", userController.loginUser);
+userRouter.post("/login", loginRateLimiter, userController.loginUser);
+userRouter.post("/forgot-password", passwordResetRateLimiter, userController.forgotPassword);
+userRouter.post("/reset-password", passwordResetRateLimiter, userController.resetPassword);
 
 // Logout endpoint - clears the httpOnly token cookie
 userRouter.post("/logout", (req, res) => {
   res.clearCookie("token", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
+    ...AUTH_COOKIE_OPTIONS,
+    maxAge: undefined,
   });
   return res.json({ success: true, message: "Logged out successfully" });
 });
